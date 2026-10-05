@@ -45,7 +45,6 @@ build/
 dist/
 .venv/
 venv/
-.python-version
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
