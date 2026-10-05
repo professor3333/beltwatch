@@ -194,11 +194,15 @@ uv run mypy                   # strict type checking of src/
 
 ### Getting the data
 
+The data pipeline is defined in [`dvc.yaml`](dvc.yaml) and run with
+[DVC](https://dvc.org/):
+
 ```bash
-uv run python -m beltwatch.data.download
+uv run dvc repro            # runs the download stage (and later stages as they are added)
 ```
 
-This downloads the pinned ZeroWaste-f release (about 7.5 GB, resumable),
+The `download` stage (also runnable directly with
+`uv run python -m beltwatch.data.download`) downloads the pinned ZeroWaste-f release (about 7.5 GB, resumable),
 verifies its size and MD5 against [`configs/data.yaml`](configs/data.yaml),
 extracts it to `data/raw/zerowaste-f/`, and writes the measured image counts
 to `data/manifests/zerowaste-f-download.json`. Reserve about 20 GB of free
@@ -209,6 +213,7 @@ download and verify only.
 
 ```
 configs/data.yaml        Pinned dataset release (record, version, size, MD5) and data paths
+dvc.yaml                 Data pipeline stages
 src/beltwatch/labels.py  Single source of truth for class IDs, names, and the ignore index
 src/beltwatch/data/      Data configuration and the verified downloader
 tests/                   Unit and data tests (no network needed)

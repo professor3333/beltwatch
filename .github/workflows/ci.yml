@@ -24,7 +24,8 @@ jobs:
           enable-cache: true
 
       - name: Install dependencies
-        run: uv sync --locked
+        # The DVC pipeline group is only needed to run the data pipeline.
+        run: uv sync --locked --no-group pipeline
 
       - name: Lint
         run: uv run ruff check
