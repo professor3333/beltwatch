@@ -8,19 +8,22 @@ license-files = ["LICENSE"]
 authors = [{ name = "Niroj33" }]
 requires-python = ">=3.12,<3.13"
 dependencies = [
+    "alembic>=1.13",
+    "mlflow-skinny>=3.0",
     "numpy>=2.0",
     "pillow>=10.4",
     "pydantic>=2.7",
     "pyyaml>=6.0",
     "scikit-image>=0.24",
     "scikit-learn>=1.5",
+    "sqlalchemy>=2.0",
 ]
 
 [project.optional-dependencies]
 # Pick exactly one PyTorch build: `uv sync --extra cpu` (CI, laptops, CPU serving)
 # or `uv sync --extra cu126` (NVIDIA GPU training machines).
-cpu = ["torch>=2.14,<2.15"]
-cu126 = ["torch>=2.14,<2.15"]
+cpu = ["torch>=2.14,<2.15", "torchvision>=0.29,<0.30"]
+cu126 = ["torch>=2.14,<2.15", "torchvision>=0.29,<0.30"]
 
 [dependency-groups]
 dev = [
@@ -48,6 +51,10 @@ src = ["src", "tests"]
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "NPY", "RUF"]
 
+[tool.ruff.lint.per-file-ignores]
+# Notebook cells hold full shell commands, which read better unwrapped.
+"notebooks/*.ipynb" = ["E501"]
+
 [tool.mypy]
 python_version = "3.12"
 strict = true
@@ -55,7 +62,7 @@ files = ["src"]
 
 [[tool.mypy.overrides]]
 # Third-party packages without type information.
-module = ["joblib", "sklearn.*", "skimage.*"]
+module = ["joblib", "sklearn.*", "skimage.*", "torchvision.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
@@ -63,6 +70,10 @@ testpaths = ["tests"]
 addopts = "-ra --strict-markers"
 markers = [
     "slow: long-running tests excluded from PR CI",
+]
+filterwarnings = [
+    # Raised inside MLflow's own SQLAlchemy models, not by BeltWatch code.
+    "ignore:The ``noload`` loader strategy is deprecated:DeprecationWarning",
 ]
 
 [tool.uv]
@@ -72,6 +83,10 @@ conflicts = [[{ extra = "cpu" }, { extra = "cu126" }]]
 
 [tool.uv.sources]
 torch = [
+    { index = "pytorch-cpu", extra = "cpu" },
+    { index = "pytorch-cu126", extra = "cu126" },
+]
+torchvision = [
     { index = "pytorch-cpu", extra = "cpu" },
     { index = "pytorch-cu126", extra = "cu126" },
 ]

@@ -211,16 +211,22 @@ def write_per_image(results: Sequence[ImageResult], path: Path) -> None:
 def load_predictor(kind: str, model_dir: Path | None) -> Predictor:
     if kind == "all-background":
         return AllBackground()
+    if model_dir is None:
+        raise ValueError(f"--model-dir is required for {kind}")
     if kind == "random-forest":
-        if model_dir is None:
-            raise ValueError("--model-dir is required for the random forest")
         return RandomForestSegmenter.load(model_dir)
+    if kind == "unet":
+        from beltwatch.inference.neural import NeuralPredictor
+
+        return NeuralPredictor.from_checkpoint(model_dir / "best.pt")
     raise ValueError(f"unknown model {kind!r}")
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Evaluate a BeltWatch model on one split.")
-    parser.add_argument("--model", required=True, choices=["all-background", "random-forest"])
+    parser.add_argument(
+        "--model", required=True, choices=["all-background", "random-forest", "unet"]
+    )
     parser.add_argument("--model-dir", type=Path)
     parser.add_argument("--split", required=True, choices=["val", "calibration", "test"])
     parser.add_argument("--config", type=Path, default=Path("configs/data.yaml"))

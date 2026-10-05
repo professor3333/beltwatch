@@ -210,6 +210,17 @@ uv run python scripts/evaluate.py --model random-forest --model-dir models/rando
 
 Reports go to `reports/<model>-<split>/` (`report.json` and `per_image.csv`).
 
+### Training the U-Net
+
+```bash
+uv run python scripts/train.py --config configs/unet.yaml
+uv run python scripts/evaluate.py --model unet --model-dir models/unet-resnet18-ce --split val
+uvx mlflow ui --backend-store-uri sqlite:///mlflow.db
+```
+
+Full training needs an NVIDIA GPU. See the [training runbook](docs/training.md)
+and the [Colab notebook](notebooks/train_colab.ipynb).
+
 ### Getting the data
 
 The data pipeline is defined in [`dvc.yaml`](dvc.yaml) and run with
@@ -239,12 +250,18 @@ src/beltwatch/inference/ Shared preprocessing and coverage computation used by t
 src/beltwatch/evaluation/ Segmentation metrics, coverage error, review workload, group bootstrap,
                          and the evaluation runner used for every model
 src/beltwatch/baselines/ All-background sanity check and the random-forest baseline
+src/beltwatch/models/    U-Net with a pretrained ResNet-18 encoder
+src/beltwatch/training/  Training configuration, losses, and the tracked, resumable training loop
+configs/unet.yaml        U-Net training configuration
+notebooks/               Colab notebook for GPU training
 scripts/evaluate.py      Evaluate a model on a split (the test split requires a declared release)
+scripts/train.py         Train a model from a YAML config
 data/manifests/, data/splits/  Git-tracked pipeline outputs (written by the first full run)
 tests/                   Unit and data tests (no network needed)
 docs/design.md           Full design: problem, data, models, evaluation, system, Definition of Done
 docs/dataset_card.md     Dataset provenance, licensing, split policy, and known limitations
 docs/evaluation.md       Evaluation protocol: metrics, coverage, review workload, confidence intervals
+docs/training.md         GPU training runbook
 THIRD_PARTY_NOTICES.md   Dataset and model licensing
 ```
 
