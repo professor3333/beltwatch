@@ -221,6 +221,28 @@ uvx mlflow ui --backend-store-uri sqlite:///mlflow.db
 Full training needs an NVIDIA GPU. See the [training runbook](docs/training.md)
 and the [Colab notebook](notebooks/train_colab.ipynb).
 
+### Running the audit service
+
+```bash
+# 1. Build and activate a model release (here from a trained U-Net)
+uv run python -m beltwatch.release.bundle --kind unet --version beltwatch-0.1.0 \
+    --model models/unet-resnet18-ce/best.pt --activate
+
+# 2. Start the API and the inference worker (two terminals)
+uv run uvicorn beltwatch.api.app:create_app --factory --port 8000
+uv run python -m beltwatch.jobs.worker
+
+# 3. Submit an audit and follow it
+curl -F "files=@frame.png" \
+     -F 'options={"camera_id":"line-1","inspection_region":[[0.05,0.1],[0.95,0.1],[0.95,0.9],[0.05,0.9]]}' \
+     http://localhost:8000/v1/audits
+curl http://localhost:8000/v1/audits/<audit_id>
+```
+
+Interactive API docs are served at `http://localhost:8000/docs`. The
+endpoints, failure handling, and data model are described in
+[`docs/architecture.md`](docs/architecture.md).
+
 ### Getting the data
 
 The data pipeline is defined in [`dvc.yaml`](dvc.yaml) and run with
@@ -256,12 +278,18 @@ configs/unet.yaml        U-Net training configuration
 notebooks/               Colab notebook for GPU training
 scripts/evaluate.py      Evaluate a model on a split (the test split requires a declared release)
 scripts/train.py         Train a model from a YAML config
+src/beltwatch/api/       FastAPI application and settings
+src/beltwatch/jobs/      SQLite job store, per-image pipeline, inference worker
+src/beltwatch/review/    Review policy (routing, priority, random audits)
+src/beltwatch/release/   Versioned, checksummed model release bundles
+configs/review_policy.yaml  Versioned review thresholds
 data/manifests/, data/splits/  Git-tracked pipeline outputs (written by the first full run)
 tests/                   Unit and data tests (no network needed)
 docs/design.md           Full design: problem, data, models, evaluation, system, Definition of Done
 docs/dataset_card.md     Dataset provenance, licensing, split policy, and known limitations
 docs/evaluation.md       Evaluation protocol: metrics, coverage, review workload, confidence intervals
 docs/training.md         GPU training runbook
+docs/architecture.md     Service architecture, failure handling, data model
 THIRD_PARTY_NOTICES.md   Dataset and model licensing
 ```
 
