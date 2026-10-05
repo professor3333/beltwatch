@@ -224,11 +224,13 @@ dvc.yaml                 Data pipeline stages
 src/beltwatch/labels.py  Single source of truth for class IDs, names, and the ignore index
 src/beltwatch/data/      Data configuration, verified downloader, validation, duplicate audit, splits,
                          mask conversion, augmentation, and the PyTorch dataset
-src/beltwatch/inference/ Shared preprocessing used by training and serving
+src/beltwatch/inference/ Shared preprocessing and coverage computation used by training and serving
+src/beltwatch/evaluation/ Segmentation metrics, coverage error, review workload, group bootstrap
 data/manifests/, data/splits/  Git-tracked pipeline outputs (written by the first full run)
 tests/                   Unit and data tests (no network needed)
 docs/design.md           Full design: problem, data, models, evaluation, system, Definition of Done
-docs/dataset_card.md     Dataset provenance, licensing, and known limitations
+docs/dataset_card.md     Dataset provenance, licensing, split policy, and known limitations
+docs/evaluation.md       Evaluation protocol: metrics, coverage, review workload, confidence intervals
 THIRD_PARTY_NOTICES.md   Dataset and model licensing
 ```
 
