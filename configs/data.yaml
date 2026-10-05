@@ -1,0 +1,18 @@
+# Pinned source release. Values come from the Zenodo API
+# (https://zenodo.org/api/records/6412647) and must not be edited by hand
+# except to deliberately move to a new release.
+source:
+  name: zerowaste-f
+  zenodo_record: 6412647
+  version: "1.2.1"
+  doi: 10.5281/zenodo.6412647
+  filename: zerowaste-f-final.zip
+  url: https://zenodo.org/api/records/6412647/files/zerowaste-f-final.zip/content
+  size_bytes: 7518242799
+  md5: e26e31a58080bca6782dca0e56074c5d
+
+# Paths are relative to the repository root.
+paths:
+  downloads_dir: data/downloads
+  raw_dir: data/raw/zerowaste-f
+  manifests_dir: data/manifests

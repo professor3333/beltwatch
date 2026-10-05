@@ -192,12 +192,28 @@ uv run ruff format --check    # formatting
 uv run mypy                   # strict type checking of src/
 ```
 
+### Getting the data
+
+```bash
+uv run python -m beltwatch.data.download
+```
+
+This downloads the pinned ZeroWaste-f release (about 7.5 GB, resumable),
+verifies its size and MD5 against [`configs/data.yaml`](configs/data.yaml),
+extracts it to `data/raw/zerowaste-f/`, and writes the measured image counts
+to `data/manifests/zerowaste-f-download.json`. Reserve about 20 GB of free
+disk for the archive plus the extracted files. Use `--skip-extract` to
+download and verify only.
+
 ## Repository layout
 
 ```
+configs/data.yaml        Pinned dataset release (record, version, size, MD5) and data paths
 src/beltwatch/labels.py  Single source of truth for class IDs, names, and the ignore index
-tests/                   Unit tests
+src/beltwatch/data/      Data configuration and the verified downloader
+tests/                   Unit and data tests (no network needed)
 docs/design.md           Full design: problem, data, models, evaluation, system, Definition of Done
+docs/dataset_card.md     Dataset provenance, licensing, and known limitations
 THIRD_PARTY_NOTICES.md   Dataset and model licensing
 ```
 
