@@ -16,3 +16,22 @@ stages:
       # image count; committed to git rather than the DVC cache.
       - data/manifests/zerowaste-f-download.json:
           cache: false
+
+  validate:
+    cmd: python -m beltwatch.data.validate --config configs/data.yaml
+    deps:
+      - data/raw/zerowaste-f
+      - src/beltwatch/data/config.py
+      - src/beltwatch/data/validate.py
+      - src/beltwatch/labels.py
+    params:
+      - configs/data.yaml:
+          - layout
+    outs:
+      # Git-tracked so the dataset's composition is reviewable without downloading it.
+      - data/manifests/zerowaste-f-images.csv:
+          cache: false
+      - data/manifests/zerowaste-f-quarantine.csv:
+          cache: false
+      - data/manifests/zerowaste-f-validation.json:
+          cache: false

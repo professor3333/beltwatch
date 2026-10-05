@@ -11,6 +11,14 @@ source:
   size_bytes: 7518242799
   md5: e26e31a58080bca6782dca0e56074c5d
 
+# Layout inside the extracted archive (measured from the release's zip index).
+layout:
+  root_subdir: splits_final_deblurred
+  splits: [train, val, test]
+  images_subdir: data
+  masks_subdir: sem_seg
+  annotations_file: labels.json
+
 # Paths are relative to the repository root.
 paths:
   downloads_dir: data/downloads
