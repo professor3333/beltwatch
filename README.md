@@ -229,6 +229,13 @@ uv run python -m beltwatch.release.bundle --kind unet --model models/unet-resnet
     --version <v> --calibration reports/calibration-unet/calibration.json
 ```
 
+Analyse errors on val, and benchmark a release on the target CPU:
+
+```bash
+uv run python scripts/error_report.py --model unet --model-dir models/unet-resnet18-ce --split val --out reports/errors-unet
+uv run python scripts/benchmark.py --release model_releases/<v> --threads 4 --out reports/benchmark.json
+```
+
 Full training needs an NVIDIA GPU. See the [training runbook](docs/training.md)
 and the [Colab notebook](notebooks/train_colab.ipynb).
 
@@ -307,6 +314,8 @@ configs/unet.yaml, configs/segformer_b0.yaml   Matched training configurations
 notebooks/               Colab notebook for GPU training
 scripts/evaluate.py      Evaluate a model on a split (the test split requires a declared release)
 scripts/train.py         Train a model from a YAML config
+scripts/error_report.py  Error-analysis report (val only)
+scripts/benchmark.py     CPU latency, throughput, and memory of a release
 src/beltwatch/api/       FastAPI application and settings
 src/beltwatch/jobs/      SQLite job store, per-image pipeline, inference worker
 src/beltwatch/review/    Review policy (routing, priority, random audits)
@@ -323,6 +332,7 @@ docs/evaluation.md       Evaluation protocol: metrics, coverage, review workload
 docs/training.md         GPU training runbook
 docs/architecture.md     Service architecture, failure handling, data model
 docs/operations.md       Deploy, release, rollback, backup, monitoring
+docs/error_analysis.md   Error report contents and findings log
 THIRD_PARTY_NOTICES.md   Dataset and model licensing
 ```
 

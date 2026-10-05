@@ -108,6 +108,22 @@ coverage_c = pixels labelled c inside the inspection region
   wide. Time-block groups give narrower intervals but assume more
   independence than the data guarantees. Both are reported.
 
+## Runtime benchmark
+
+`scripts/benchmark.py --release model_releases/<v> --threads 4` measures, in a
+fresh process:
+
+- warm p50 and p95 latency of prediction alone, and of the full worker
+  pipeline (quality checks, prediction, coverage, uncertainty, routing, and
+  PNG encoding of the artifacts)
+- sequential throughput
+- peak resident memory
+
+It reports these against the planning targets: p95 of at most 3 s per image,
+at least 0.5 images per second, and a peak of at most 2 GB. The hardware is
+recorded with the result, and the numbers count only on the documented target
+(4 vCPU, 8 GB).
+
 ## Acceptance targets (proposed, not results)
 
 - Foreground macro IoU at least 5 percentage points above the tuned
