@@ -1,0 +1,44 @@
+name: Bug report
+description: Something in BeltWatch behaves incorrectly
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Data pipeline (download, validation, splits)
+        - Training / evaluation
+        - Inference / preprocessing
+        - API / jobs
+        - Frontend
+        - Deployment / CI
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: Observed behavior vs. what you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. ...
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: versions
+    attributes:
+      label: Versions
+      description: Git commit, model release version, dataset/manifest version, OS, Python.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or error output
+      render: shell

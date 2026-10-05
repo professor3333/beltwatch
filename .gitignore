@@ -1,0 +1,66 @@
+# --- Datasets and generated data (versioned with DVC, never git) ---
+data/raw/
+data/interim/
+data/processed/
+data/quarantine/
+data/external/
+*.zip
+*.tar
+*.tar.gz
+
+# --- Model artifacts and experiment tracking ---
+model_releases/*
+!model_releases/README.md
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.safetensors
+mlruns/
+mlartifacts/
+mlflow.db
+
+# --- Application runtime state ---
+uploads/
+artifacts/
+reports/generated/
+*.sqlite
+*.sqlite3
+*.db
+*.db-wal
+*.db-shm
+
+# --- Secrets and environment ---
+.env
+.env.*
+!.env.example
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.python-version
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.ipynb_checkpoints/
+
+# --- DVC local state ---
+/.dvc/tmp
+/.dvc/cache
+
+# --- Editors and OS ---
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db

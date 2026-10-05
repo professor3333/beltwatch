@@ -1,0 +1,32 @@
+name: Feature or experiment proposal
+description: Propose a feature, experiment, or design change
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: What problem or diagnosed failure does this address? For model changes, link the error-analysis evidence.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+    validations:
+      required: true
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Scope phase
+      options:
+        - MVP
+        - Version 1
+        - Advanced extension
+    validations:
+      required: true
+  - type: textarea
+    id: evaluation
+    attributes:
+      label: How will we know it worked?
+      description: Metric, gate, or test that will verify the change.
