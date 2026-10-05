@@ -1,6 +1,7 @@
 """Validated data configuration (``configs/data.yaml``)."""
 
 from pathlib import Path
+from typing import Literal
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, PositiveInt
@@ -40,16 +41,27 @@ class DuplicatesConfig(_Frozen):
     phash_max_hamming: int = Field(ge=0, le=64)
 
 
+class SplitsConfig(_Frozen):
+    """How the released splits are turned into BeltWatch's evaluation splits."""
+
+    policy: Literal["official-repaired"]
+    calibration_from_val_sequences: tuple[str, ...]
+    train_buffer_frames: int = Field(ge=0)
+    exclude_train_duplicates_of_eval: bool
+
+
 class PathsConfig(_Frozen):
     downloads_dir: Path
     raw_dir: Path
     manifests_dir: Path
+    splits_dir: Path
 
 
 class DataConfig(_Frozen):
     source: SourceConfig
     layout: LayoutConfig
     duplicates: DuplicatesConfig
+    splits: SplitsConfig
     paths: PathsConfig
 
 

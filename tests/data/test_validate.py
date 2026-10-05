@@ -11,7 +11,6 @@ from beltwatch import labels
 from beltwatch.data import validate as v
 from beltwatch.data.config import (
     DataConfig,
-    DuplicatesConfig,
     LayoutConfig,
     PathsConfig,
     SourceConfig,
@@ -282,9 +281,13 @@ def test_write_outputs(ds: FakeDataset, tmp_path: Path) -> None:
     config = DataConfig(
         source=SourceConfig(**{**repo.source.model_dump(), "name": "fixture"}),
         layout=LAYOUT,
-        duplicates=DuplicatesConfig(hash_size=8, phash_max_hamming=6),
+        duplicates=repo.duplicates,
+        splits=repo.splits,
         paths=PathsConfig(
-            downloads_dir=tmp_path / "dl", raw_dir=ds.raw_dir, manifests_dir=tmp_path / "m"
+            downloads_dir=tmp_path / "dl",
+            raw_dir=ds.raw_dir,
+            manifests_dir=tmp_path / "m",
+            splits_dir=tmp_path / "s",
         ),
     )
 

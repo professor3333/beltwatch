@@ -52,3 +52,14 @@ def test_duplicates_stage_reads_manifest_and_matches_config() -> None:
         _manifest("duplicates.csv"),
         _manifest("duplicates.json"),
     }
+
+
+def test_splits_stage_reads_audit_outputs_and_matches_config() -> None:
+    stage = STAGES["splits"]
+    splits_dir = CONFIG.paths.splits_dir
+
+    assert {_manifest("images.csv"), _manifest("duplicates.csv")} <= set(stage["deps"])
+    assert _out_paths(stage) == {
+        (splits_dir / f"{CONFIG.source.name}-splits.csv").as_posix(),
+        (splits_dir / f"{CONFIG.source.name}-splits.json").as_posix(),
+    }
