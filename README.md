@@ -15,11 +15,12 @@ Semantic segmentation · visible-coverage estimation · uncertainty-aware review
 </div>
 
 > [!NOTE]
-> **Project status: implementation in progress.** The data pipeline, shared
-> preprocessing, evaluation suite, and classical baselines are implemented and
-> tested, and they have been checked on small real samples of the dataset. No
-> model has been trained on the full dataset yet, so this README lists **no
-> results**. Roadmap items are ticked only after a full run.
+> **Project status: system built; full-data training pending.** The complete
+> pipeline is implemented, tested (215 tests), and checked on real ZeroWaste
+> frames: data pipeline, baselines, U-Net and SegFormer training,
+> calibration, evaluation, error analysis, the audit service and review UI,
+> and the container deployment. No model has been trained on the full
+> dataset yet, so this README reports **no results**. See [Status](#status).
 
 ## Architecture
 
@@ -81,7 +82,7 @@ It does **not** estimate contamination by weight, certify bale purity, or
 prove that an image is clean. "Background" means "outside the four target
 labels", not "verified clean paper".
 
-## Planned workflow
+## Workflow
 
 1. Upload a batch of conveyor snapshots and draw the inspection region.
 2. An asynchronous job validates the images and runs segmentation on CPU.
@@ -116,7 +117,8 @@ Confidence intervals use a paired bootstrap over recording groups. A neural
 model must clearly beat the *tuned* classical baseline to be adopted, and a
 well-tuned U-Net is an acceptable winner.
 
-Details: [design §9–§16](docs/design.md#9-model-strategy).
+Details: [design §9–§16](docs/design.md#9-model-strategy) and the
+[model card](docs/model_card.md).
 
 ## Tech stack
 
@@ -128,30 +130,29 @@ Details: [design §9–§16](docs/design.md#9-model-strategy).
 | Operations | Docker Compose, Prometheus, GitHub Actions |
 | Optional optimization | ONNX Runtime, adopted only if benchmarks justify it |
 
-## Roadmap
+## Status
 
-**MVP**
-- [ ] Reproducible ZeroWaste-f download, checksum verification, and validation
-- [ ] Duplicate and leakage audit; versioned split manifests
-- [ ] Classical random-forest baseline
-- [ ] One trained neural segmentation model
-- [ ] Upload, inspection-region selection, overlay, and visible coverage
-- [ ] Basic human review
-- [ ] Dockerized API and interface
-- [ ] Held-out evaluation
-
-**Version 1**
-- [ ] U-Net vs. SegFormer comparison, focused ablations, 3-seed finalists
-- [ ] Temperature-scaling calibration and uncertainty-aware review
-- [ ] Durable jobs with leases, retries, and recovery
-- [ ] Feedback history and report export
-- [ ] Versioned release bundles and tested rollback
-- [ ] Automated error-analysis report
-- [ ] CI, CPU benchmarks, and monitoring
-- [ ] A usability study of review time and detection recall
+| Component | Status |
+|---|---|
+| Pinned, checksummed, resumable download; validation and quarantine | Built and tested; checked on real archive data |
+| Duplicate and leakage audit; official-repaired split policy | Built and tested; checked on real data |
+| Shared preprocessing; mask conversion; augmentation | Built and tested; overlays checked on real frames |
+| All-background and random-forest baselines | Built and tested; **full-data run pending** |
+| U-Net (ResNet-18) and SegFormer-B0 training with MLflow | Built and tested; **GPU training pending** |
+| Temperature-scaling calibration (overall and foreground ECE) | Built and tested; **fit on trained models pending** |
+| Evaluation suite: foreground macro IoU, coverage MAE, review workload, group bootstrap | Built and tested |
+| Error-analysis report and CPU benchmark | Built and tested; **runs on trained models pending** |
+| Audit service: durable jobs, leases, retries, idempotency, append-only feedback, reports | Built and tested; exercised live |
+| Review UI | Built; exercised in a headless browser |
+| Versioned release bundles, activation, and rollback | Built; switch and rollback verified in CI |
+| Docker Compose deployment (HTTPS proxy, API, worker, Prometheus) | Built; deployed and smoke-tested in CI |
+| Ablations (loss, sampling, resolution) and 3-seed finalists | Not started (needs GPU) |
+| Locked test-set evaluation of a declared release | Not started (after model selection on val) |
+| Staged robustness dataset, usability study, hosted demo, ONNX/INT8 | Not started |
 
 The full plan, targets, and Definition of Done are in
-[`docs/design.md`](docs/design.md).
+[`docs/design.md`](docs/design.md). The GPU steps are in the
+[training runbook](docs/training.md).
 
 ## Data
 
@@ -211,7 +212,7 @@ uv run python scripts/evaluate.py --model random-forest --model-dir models/rando
 
 Reports go to `reports/<model>-<split>/` (`report.json` and `per_image.csv`).
 
-### Training the U-Net
+### Training models
 
 ```bash
 uv run python scripts/train.py --config configs/unet.yaml
@@ -328,6 +329,7 @@ data/manifests/, data/splits/  Git-tracked pipeline outputs (written by the firs
 tests/                   Unit and data tests (no network needed)
 docs/design.md           Full design: problem, data, models, evaluation, system, Definition of Done
 docs/dataset_card.md     Dataset provenance, licensing, split policy, and known limitations
+docs/model_card.md       Intended use, models, evaluation (pending results), failure modes
 docs/evaluation.md       Evaluation protocol: metrics, coverage, review workload, confidence intervals
 docs/training.md         GPU training runbook
 docs/architecture.md     Service architecture, failure handling, data model
