@@ -191,7 +191,8 @@ cardboard, soft plastic, rigid plastic, and metal.
 Requires Python 3.12 and [uv](https://docs.astral.sh/uv/).
 
 ```bash
-uv sync                       # create .venv and install locked dependencies
+uv sync --extra cpu           # create .venv with locked deps + CPU PyTorch
+                              # (on an NVIDIA training machine: --extra cu126)
 uv run pytest -m "not slow"   # tests (no network or dataset needed)
 uv run ruff check             # lint
 uv run ruff format --check    # formatting
@@ -221,7 +222,9 @@ download and verify only.
 configs/data.yaml        Pinned dataset release (record, version, size, MD5) and data paths
 dvc.yaml                 Data pipeline stages
 src/beltwatch/labels.py  Single source of truth for class IDs, names, and the ignore index
-src/beltwatch/data/      Data configuration, verified downloader, validation, duplicate audit, splits
+src/beltwatch/data/      Data configuration, verified downloader, validation, duplicate audit, splits,
+                         mask conversion, augmentation, and the PyTorch dataset
+src/beltwatch/inference/ Shared preprocessing used by training and serving
 data/manifests/, data/splits/  Git-tracked pipeline outputs (written by the first full run)
 tests/                   Unit and data tests (no network needed)
 docs/design.md           Full design: problem, data, models, evaluation, system, Definition of Done

@@ -14,6 +14,12 @@ dependencies = [
     "pyyaml>=6.0",
 ]
 
+[project.optional-dependencies]
+# Pick exactly one PyTorch build: `uv sync --extra cpu` (CI, laptops, CPU serving)
+# or `uv sync --extra cu126` (NVIDIA GPU training machines).
+cpu = ["torch>=2.14,<2.15"]
+cu126 = ["torch>=2.14,<2.15"]
+
 [dependency-groups]
 dev = [
     "mypy>=1.11",
@@ -55,3 +61,20 @@ markers = [
 [tool.uv]
 # Install the DVC pipeline group locally by default; CI opts out with --no-group.
 default-groups = ["dev", "pipeline"]
+conflicts = [[{ extra = "cpu" }, { extra = "cu126" }]]
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu", extra = "cpu" },
+    { index = "pytorch-cu126", extra = "cu126" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
