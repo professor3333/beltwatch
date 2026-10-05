@@ -11,7 +11,9 @@ BeltWatch with them must follow them.
 
 - **Authors:** Dina Bashkirova and collaborators, Boston University
 - **Project:** <https://ai.bu.edu/zerowaste/>
-- **Release used:** Zenodo record [6412647](https://zenodo.org/records/6412647), `zerowaste-f-final.zip`
+- **Release used:** Zenodo record [6412647](https://zenodo.org/records/6412647), version 1.2.1,
+  DOI [10.5281/zenodo.6412647](https://doi.org/10.5281/zenodo.6412647), file `zerowaste-f-final.zip`
+  (7,518,242,799 bytes, MD5 `e26e31a58080bca6782dca0e56074c5d`)
 - **Code repository:** <https://github.com/dbash/zerowaste>
 - **Paper:** <https://proceedings.mlr.press/v220/bashkirova23a/bashkirova23a.pdf>
 - **License: unresolved discrepancy.**

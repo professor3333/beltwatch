@@ -1,4 +1,5 @@
 # --- Datasets and generated data (versioned with DVC, never git) ---
+data/downloads/
 data/raw/
 data/interim/
 data/processed/
@@ -7,6 +8,7 @@ data/external/
 *.zip
 *.tar
 *.tar.gz
+*.part
 
 # --- Model artifacts and experiment tracking ---
 model_releases/*
