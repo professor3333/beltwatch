@@ -25,7 +25,7 @@ jobs:
 
       - name: Install dependencies
         # The DVC pipeline group is only needed to run the data pipeline.
-        run: uv sync --locked --no-group pipeline
+        run: uv sync --locked --extra cpu --no-group pipeline
 
       - name: Lint
         run: uv run ruff check
