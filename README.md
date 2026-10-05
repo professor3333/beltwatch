@@ -171,8 +171,11 @@ cardboard, soft plastic, rigid plastic, and metal.
 
 ## Known limitations (by design)
 
-- The frames come from related video footage, so split independence cannot be
-  assumed. Leakage risk is audited and reported.
+- The frames come from related video footage, and the dataset's official
+  train/val/test splits share recording sequences
+  ([details](docs/dataset_card.md#splits-and-leakage-findings)), so results on
+  the official test split may be optimistic. Leakage risk is audited and
+  reported.
 - The data covers one facility and a narrow range of operating conditions.
   BeltWatch makes no claim about other facilities or cameras without local
   validation.
@@ -198,7 +201,7 @@ The data pipeline is defined in [`dvc.yaml`](dvc.yaml) and run with
 [DVC](https://dvc.org/):
 
 ```bash
-uv run dvc repro            # runs the download stage (and later stages as they are added)
+uv run dvc repro            # download → validate (more stages as they are added)
 ```
 
 The `download` stage (also runnable directly with
@@ -215,7 +218,7 @@ download and verify only.
 configs/data.yaml        Pinned dataset release (record, version, size, MD5) and data paths
 dvc.yaml                 Data pipeline stages
 src/beltwatch/labels.py  Single source of truth for class IDs, names, and the ignore index
-src/beltwatch/data/      Data configuration and the verified downloader
+src/beltwatch/data/      Data configuration, verified downloader, and dataset validation
 tests/                   Unit and data tests (no network needed)
 docs/design.md           Full design: problem, data, models, evaluation, system, Definition of Done
 docs/dataset_card.md     Dataset provenance, licensing, and known limitations

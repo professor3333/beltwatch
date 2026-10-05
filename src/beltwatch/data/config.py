@@ -23,6 +23,16 @@ class SourceConfig(_Frozen):
     md5: str = Field(pattern=r"^[0-9a-f]{32}$")
 
 
+class LayoutConfig(_Frozen):
+    """Directory layout inside the extracted archive."""
+
+    root_subdir: str
+    splits: tuple[str, ...] = Field(min_length=1)
+    images_subdir: str
+    masks_subdir: str
+    annotations_file: str
+
+
 class PathsConfig(_Frozen):
     downloads_dir: Path
     raw_dir: Path
@@ -31,6 +41,7 @@ class PathsConfig(_Frozen):
 
 class DataConfig(_Frozen):
     source: SourceConfig
+    layout: LayoutConfig
     paths: PathsConfig
 
 
