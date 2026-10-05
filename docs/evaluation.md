@@ -72,6 +72,30 @@ coverage_c = pixels labelled c inside the inspection region
 - Orderings compared: random, the classical baseline, the neural model, and
   the neural model with an uncertainty share and random audits.
 
+## Calibration
+
+- **Temperature scaling** is fitted on the **calibration split only**
+  (`python -m beltwatch.evaluation.calibration`), by minimizing the negative
+  log-likelihood over uniformly sampled valid pixels. It works from
+  probabilities, so it applies to the random forest as well as the neural
+  models.
+- **Expected calibration error** (15 equal-width bins, top-label) is reported
+  **overall and on foreground pixels** (where the ground truth or the
+  prediction is a target material). Background dominates the pixel count and
+  can hide poor confidence on the materials. Every evaluation report includes
+  both, together with reliability-diagram data, and the calibration command
+  writes SVG reliability diagrams.
+- **Release guard:** a release built with `--calibration` refuses a
+  temperature that makes foreground ECE worse, unless the regression is
+  explicitly allowed and recorded in the manifest.
+- **Known limitation.** One global temperature can trade foreground
+  calibration against overall calibration. On a 10-image development sample
+  (smoke-test model, not a result), fitting on all pixels improved overall
+  ECE but worsened foreground ECE, and fitting on foreground pixels did the
+  reverse. `--fit-scope foreground` is available. If the trained models show
+  the same conflict, class-wise (vector) temperature scaling is the next
+  step.
+
 ## Confidence intervals
 
 - Percentile bootstrap that resamples **groups, never pixels**. Groups are

@@ -58,6 +58,9 @@ def test_oracle_scores_perfectly(images: tuple[list[Sample], dict[int, np.ndarra
     ci = report["confidence_intervals"]["foreground_macro_iou"]["groups_by_sequence"]
     assert ci["n_groups"] == 3
     assert ci["too_few_groups"] is True  # 3 sequences cannot support a meaningful interval
+    calibration = report["calibration"]
+    assert calibration["overall"]["ece"] == pytest.approx(0.0, abs=1e-6)  # one-hot and correct
+    assert calibration["foreground"]["n_pixels"] > 0
 
 
 def test_all_background_scores_zero_with_high_pixel_accuracy(

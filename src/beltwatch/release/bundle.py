@@ -78,6 +78,7 @@ class ReleaseManifest(BaseModel):
     limitations: tuple[str, ...]
     licenses: tuple[str, ...]
     evaluation_report: str | None = None
+    calibration_report: str | None = None
 
 
 def _digest(path: Path) -> str:
@@ -109,8 +110,9 @@ class Release:
         path = self.directory / model.path
         if model.kind == "random-forest":
             from beltwatch.baselines.random_forest import RandomForestSegmenter
+            from beltwatch.inference.predictor import TemperatureScaled
 
-            return RandomForestSegmenter.load(path)
+            return TemperatureScaled(RandomForestSegmenter.load(path), self.manifest.temperature)
         from beltwatch.inference.neural import NeuralPredictor
 
         return NeuralPredictor.from_checkpoint(path, device, self.manifest.temperature)
@@ -181,6 +183,8 @@ def build_release(
     temperature: float = 1.0,
     calibration_note: str | None = None,
     evaluation_report: Path | None = None,
+    calibration_report: Path | None = None,
+    allow_foreground_calibration_regression: bool = False,
     provenance: dict[str, Any] | None = None,
     limitations: tuple[str, ...] = DEFAULT_LIMITATIONS,
 ) -> Release:
@@ -207,6 +211,30 @@ def build_release(
     if evaluation_report is not None:
         report_name = "evaluation.json"
         shutil.copy2(evaluation_report, staging / report_name)
+    calibration_name = None
+    if calibration_report is not None:
+        calibration = json.loads(calibration_report.read_text())
+        if not calibration.get("fitted") or calibration.get("split") != "calibration":
+            raise ReleaseError(
+                "the calibration report must come from a fit on the calibration split"
+            )
+        temperature = float(calibration["temperature"])
+        before, after = calibration["before"], calibration["after"]
+        fg_before, fg_after = before["foreground"]["ece"], after["foreground"]["ece"]
+        if fg_after > fg_before and not allow_foreground_calibration_regression:
+            raise ReleaseError(
+                f"calibration worsens foreground ECE ({fg_before:.4f} -> {fg_after:.4f}); "
+                "refit with --fit-scope foreground, or explicitly allow the regression"
+            )
+        calibration_note = (
+            "temperature scaling fitted on the calibration split "
+            f"({calibration['n_pixels']} pixels, "
+            f"{calibration['n_images']} images); ECE overall {before['overall']['ece']:.4f} -> "
+            f"{after['overall']['ece']:.4f}, foreground {before['foreground']['ece']:.4f} -> "
+            f"{after['foreground']['ece']:.4f} (fit scope: {calibration.get('fit_scope', 'all')})"
+        )
+        calibration_name = "calibration.json"
+        shutil.copy2(calibration_report, staging / calibration_name)
 
     manifest = ReleaseManifest(
         version=version,
@@ -226,6 +254,7 @@ def build_release(
         limitations=limitations,
         licenses=DEFAULT_LICENSES,
         evaluation_report=report_name,
+        calibration_report=calibration_name,
     )
     (staging / "manifest.json").write_text(manifest.model_dump_json(indent=2) + "\n")
     staging.replace(directory)
@@ -242,6 +271,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--review-policy", type=Path, default=Path("configs/review_policy.yaml"))
     parser.add_argument("--temperature", type=float, default=1.0)
     parser.add_argument("--evaluation", type=Path, help="evaluation report.json to include")
+    parser.add_argument("--calibration", type=Path, help="calibration.json; sets the temperature")
+    parser.add_argument(
+        "--allow-foreground-calibration-regression",
+        action="store_true",
+        help="accept a temperature that worsens foreground ECE (recorded in the manifest)",
+    )
     parser.add_argument("--releases-dir", type=Path, default=Path("model_releases"))
     parser.add_argument("--note", default="", help="provenance note, e.g. why it was built")
     parser.add_argument("--activate", action="store_true")
@@ -255,6 +290,8 @@ def main(argv: list[str] | None = None) -> int:
         review_policy=load_review_policy(args.review_policy),
         temperature=args.temperature,
         evaluation_report=args.evaluation,
+        calibration_report=args.calibration,
+        allow_foreground_calibration_regression=args.allow_foreground_calibration_regression,
         provenance={"note": args.note} if args.note else None,
     )
     print(f"built {release.directory}")
