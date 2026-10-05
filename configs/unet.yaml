@@ -1,0 +1,53 @@
+# U-Net with an ImageNet-pretrained ResNet-18 encoder: the deep-learning baseline.
+# Starting values from docs/design.md section 12. Time the first 500-1,000
+# steps on the training machine before committing to the full schedule.
+run_name: unet-resnet18-ce
+data_config: configs/data.yaml
+output_dir: models/unet-resnet18-ce
+
+model:
+  name: unet_resnet18
+  pretrained: true
+  freeze_bn: true
+
+preprocess:
+  long_side: 768
+  pad_multiple: 32
+
+augment:
+  crop_size: 512
+  scale_range: [0.75, 1.25]
+  hflip_prob: 0.5
+  brightness: 0.2
+  contrast: 0.2
+  blur_prob: 0.2
+  jpeg_prob: 0.2
+
+optimization:
+  epochs: 40
+  batch_size: 4
+  accumulation_steps: 2        # effective batch 8
+  encoder_lr: 3.0e-5
+  head_lr: 3.0e-4
+  weight_decay: 1.0e-4
+  warmup_epochs: 1
+  frozen_encoder_epochs: 2     # decoder/head warm-up before fine-tuning the encoder
+  grad_clip_norm: 1.0
+
+loss:
+  kind: ce                     # ce | ce_dice
+
+evaluation:
+  every_epochs: 1
+
+early_stopping_patience: 8
+
+runtime:
+  seed: 0
+  num_workers: 4
+  amp: true
+  device: auto
+
+tracking:
+  mlflow_uri: sqlite:///mlflow.db  # view: uvx mlflow ui --backend-store-uri sqlite:///mlflow.db
+  experiment: beltwatch
