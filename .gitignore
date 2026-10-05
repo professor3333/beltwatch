@@ -11,8 +11,8 @@ data/external/
 *.part
 
 # --- Model artifacts and experiment tracking ---
-model_releases/*
-!model_releases/README.md
+/model_releases/*
+!/model_releases/README.md
 checkpoints/
 *.pt
 *.pth
@@ -70,3 +70,6 @@ Thumbs.db
 # --- Local training and evaluation outputs ---
 /models/
 /reports/
+
+# --- Application runtime data (uploads, artifacts, SQLite) ---
+/var/

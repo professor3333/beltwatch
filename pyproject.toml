@@ -9,14 +9,18 @@ authors = [{ name = "Niroj33" }]
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "alembic>=1.13",
+    "fastapi>=0.115",
     "mlflow-skinny>=3.0",
     "numpy>=2.0",
     "pillow>=10.4",
+    "prometheus-client>=0.20",
     "pydantic>=2.7",
+    "python-multipart>=0.0.9",
     "pyyaml>=6.0",
     "scikit-image>=0.24",
     "scikit-learn>=1.5",
     "sqlalchemy>=2.0",
+    "uvicorn>=0.30",
 ]
 
 [project.optional-dependencies]
@@ -27,6 +31,7 @@ cu126 = ["torch>=2.14,<2.15", "torchvision>=0.29,<0.30"]
 
 [dependency-groups]
 dev = [
+    "httpx>=0.27",
     "mypy>=1.11",
     "pytest>=8.0",
     "ruff>=0.6",
@@ -74,6 +79,8 @@ markers = [
 filterwarnings = [
     # Raised inside MLflow's own SQLAlchemy models, not by BeltWatch code.
     "ignore:The ``noload`` loader strategy is deprecated:DeprecationWarning",
+    # Starlette's test client notice about its HTTP library; not BeltWatch code.
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated",
 ]
 
 [tool.uv]

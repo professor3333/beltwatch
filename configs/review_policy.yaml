@@ -1,0 +1,29 @@
+# Review policy: how results are routed to people. Versioned and pinned on each
+# audit; any change to these values must bump `version`.
+version: review-policy-1
+
+# Prioritize images whose estimated visible target coverage reaches this
+# fraction of the inspection region (matches the audit-positive convention).
+coverage_threshold: 0.05
+
+uncertainty:
+  # Normalized per-pixel entropy (0 = certain, 1 = uniform over 5 classes)
+  # above which a pixel counts as uncertain.
+  entropy_threshold: 0.5
+  # Route to manual review when this fraction of the region is uncertain.
+  uncertain_fraction_threshold: 0.10
+  # Weight of the uncertain fraction in the review priority score.
+  priority_weight: 0.5
+
+# Share of otherwise low-risk images sent to review anyway, so false negatives
+# stay visible and monitoring is not biased toward flagged images.
+random_audit_rate: 0.10
+
+quality:
+  # Variance of the Laplacian (grayscale, long side 768) below this is too blurry.
+  min_sharpness: 20.0
+  # Mean brightness (0-255) outside this range is unusable.
+  min_mean_brightness: 25.0
+  max_mean_brightness: 235.0
+  # Fraction of pixels at 0 or 255 above which the image is over/under-exposed.
+  max_clipped_fraction: 0.25
