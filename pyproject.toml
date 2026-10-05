@@ -20,6 +20,9 @@ dev = [
     "ruff>=0.6",
     "types-pyyaml>=6.0.12.20260906",
 ]
+pipeline = [
+    "dvc>=3.50",
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -47,3 +50,7 @@ addopts = "-ra --strict-markers"
 markers = [
     "slow: long-running tests excluded from PR CI",
 ]
+
+[tool.uv]
+# Install the DVC pipeline group locally by default; CI opts out with --no-group.
+default-groups = ["dev", "pipeline"]

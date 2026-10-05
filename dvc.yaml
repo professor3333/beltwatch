@@ -1,0 +1,18 @@
+# Data pipeline. Run with: uv run dvc repro
+# Output paths must match `paths` in configs/data.yaml (enforced by
+# tests/data/test_pipeline_config.py).
+stages:
+  download:
+    cmd: python -m beltwatch.data.download --config configs/data.yaml
+    deps:
+      - src/beltwatch/data/config.py
+      - src/beltwatch/data/download.py
+    params:
+      - configs/data.yaml:
+          - source
+    outs:
+      - data/raw/zerowaste-f
+      # Small, human-readable record of the verified source and the measured
+      # image count; committed to git rather than the DVC cache.
+      - data/manifests/zerowaste-f-download.json:
+          cache: false
