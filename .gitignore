@@ -65,3 +65,7 @@ htmlcov/
 *.swp
 .DS_Store
 Thumbs.db
+
+# --- Local training and evaluation outputs ---
+/models/
+/reports/

@@ -9,15 +9,16 @@ Semantic segmentation · visible-coverage estimation · uncertainty-aware review
 [![ci](https://github.com/professor3333/beltwatch/actions/workflows/ci.yml/badge.svg)](https://github.com/professor3333/beltwatch/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/code%20license-MIT-blue.svg)](LICENSE)
 [![Dataset: ZeroWaste-f](https://img.shields.io/badge/dataset-ZeroWaste--f-green.svg)](https://ai.bu.edu/zerowaste/)
-![Status: design phase](https://img.shields.io/badge/status-design%20phase-orange.svg)
+![Status: in development](https://img.shields.io/badge/status-in%20development-orange.svg)
 
 </div>
 
 > [!NOTE]
-> **Project status: design phase.** The design is complete
-> ([`docs/design.md`](docs/design.md)), and implementation is starting with the
-> MVP. No models have been trained yet. This README lists **no results** and
-> no features as done until they exist and are measured.
+> **Project status: implementation in progress.** The data pipeline, shared
+> preprocessing, evaluation suite, and classical baselines are implemented and
+> tested, and they have been checked on small real samples of the dataset. No
+> model has been trained on the full dataset yet, so this README lists **no
+> results**. Roadmap items are ticked only after a full run.
 
 ## Architecture
 
@@ -199,6 +200,16 @@ uv run ruff format --check    # formatting
 uv run mypy                   # strict type checking of src/
 ```
 
+### Baselines
+
+```bash
+uv run python -m beltwatch.baselines.random_forest --out models/random-forest
+uv run python scripts/evaluate.py --model all-background --split val
+uv run python scripts/evaluate.py --model random-forest --model-dir models/random-forest --split val
+```
+
+Reports go to `reports/<model>-<split>/` (`report.json` and `per_image.csv`).
+
 ### Getting the data
 
 The data pipeline is defined in [`dvc.yaml`](dvc.yaml) and run with
@@ -225,7 +236,10 @@ src/beltwatch/labels.py  Single source of truth for class IDs, names, and the ig
 src/beltwatch/data/      Data configuration, verified downloader, validation, duplicate audit, splits,
                          mask conversion, augmentation, and the PyTorch dataset
 src/beltwatch/inference/ Shared preprocessing and coverage computation used by training and serving
-src/beltwatch/evaluation/ Segmentation metrics, coverage error, review workload, group bootstrap
+src/beltwatch/evaluation/ Segmentation metrics, coverage error, review workload, group bootstrap,
+                         and the evaluation runner used for every model
+src/beltwatch/baselines/ All-background sanity check and the random-forest baseline
+scripts/evaluate.py      Evaluate a model on a split (the test split requires a declared release)
 data/manifests/, data/splits/  Git-tracked pipeline outputs (written by the first full run)
 tests/                   Unit and data tests (no network needed)
 docs/design.md           Full design: problem, data, models, evaluation, system, Definition of Done

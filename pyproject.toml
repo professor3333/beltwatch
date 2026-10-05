@@ -12,6 +12,8 @@ dependencies = [
     "pillow>=10.4",
     "pydantic>=2.7",
     "pyyaml>=6.0",
+    "scikit-image>=0.24",
+    "scikit-learn>=1.5",
 ]
 
 [project.optional-dependencies]
@@ -50,6 +52,11 @@ select = ["E", "F", "W", "I", "B", "UP", "SIM", "NPY", "RUF"]
 python_version = "3.12"
 strict = true
 files = ["src"]
+
+[[tool.mypy.overrides]]
+# Third-party packages without type information.
+module = ["joblib", "sklearn.*", "skimage.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
