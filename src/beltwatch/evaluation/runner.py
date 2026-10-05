@@ -36,6 +36,7 @@ from beltwatch.data.config import load_data_config
 from beltwatch.data.dataset import Sample, load_samples
 from beltwatch.data.masks import load_mask, load_source_remap
 from beltwatch.data.validate import parse_frame_name
+from beltwatch.evaluation.calibration import calibration_summary, sample_pixels
 from beltwatch.evaluation.coverage import coverage_errors, is_audit_positive
 from beltwatch.evaluation.review_workload import workload_curve
 from beltwatch.evaluation.segmentation import (
@@ -45,7 +46,7 @@ from beltwatch.evaluation.segmentation import (
 )
 from beltwatch.evaluation.statistics import bootstrap_metric, time_block_groups
 from beltwatch.inference.postprocessing import Coverage, compute_coverage
-from beltwatch.inference.predictor import Predictor
+from beltwatch.inference.predictor import Predictor, TemperatureScaled
 from beltwatch.inference.preprocessing import PREPROCESSING_VERSION, load_rgb
 from beltwatch.labels import CLASS_NAMES, TARGET_CLASS_IDS
 
@@ -65,11 +66,19 @@ class ImageResult:
     predicted: Coverage
     truth: Coverage
     seconds: float
+    calibration_log_probs: np.ndarray
+    calibration_labels: np.ndarray
 
 
 def evaluate_images(
-    predictor: Predictor, samples: Sequence[Sample], remap: dict[int, int]
+    predictor: Predictor,
+    samples: Sequence[Sample],
+    remap: dict[int, int],
+    *,
+    calibration_pixels_per_image: int = 2000,
+    seed: int = 0,
 ) -> list[ImageResult]:
+    rng = np.random.default_rng(seed)
     results = []
     for i, sample in enumerate(samples):
         rgb = load_rgb(sample.image_path)
@@ -82,6 +91,7 @@ def evaluate_images(
         pred = proba.argmax(axis=0).astype(np.uint8)
         region = np.ones(truth_mask.shape, dtype=bool)
         frame = parse_frame_name(sample.image_id.split("/", 1)[-1])
+        log_probs, labels = sample_pixels(proba, truth_mask, calibration_pixels_per_image, rng)
         results.append(
             ImageResult(
                 image_id=sample.image_id,
@@ -91,6 +101,8 @@ def evaluate_images(
                 predicted=compute_coverage(pred, region, truth_mask != 255),
                 truth=compute_coverage(truth_mask, region),
                 seconds=seconds,
+                calibration_log_probs=log_probs,
+                calibration_labels=labels,
             )
         )
         if (i + 1) % 50 == 0:
@@ -106,6 +118,16 @@ def _nan_to_none(value: Any) -> Any:
     if isinstance(value, list):
         return [_nan_to_none(v) for v in value]
     return value
+
+
+def _calibration(results: Sequence[ImageResult]) -> dict[str, Any]:
+    """ECE of the probabilities as the predictor outputs them (its temperature applied)."""
+    log_probs = np.concatenate([r.calibration_log_probs for r in results])
+    labels = np.concatenate([r.calibration_labels for r in results])
+    if not len(labels):
+        return {}
+    summary = calibration_summary(log_probs, labels, 1.0)
+    return {k: summary[k] for k in ("nll", "overall", "foreground")}
 
 
 def _interval(per_image: np.ndarray, groups: list[str], n_resamples: int) -> dict[str, Any]:
@@ -166,6 +188,7 @@ def build_report(
                 ),
             }
         },
+        "calibration": _calibration(results),
         "slices": slice_metrics,
         "prediction_seconds": {
             "p50": float(np.percentile(latency, 50)),
@@ -208,17 +231,17 @@ def write_per_image(results: Sequence[ImageResult], path: Path) -> None:
             )
 
 
-def load_predictor(kind: str, model_dir: Path | None) -> Predictor:
+def load_predictor(kind: str, model_dir: Path | None, temperature: float = 1.0) -> Predictor:
     if kind == "all-background":
         return AllBackground()
     if model_dir is None:
         raise ValueError(f"--model-dir is required for {kind}")
     if kind == "random-forest":
-        return RandomForestSegmenter.load(model_dir)
+        return TemperatureScaled(RandomForestSegmenter.load(model_dir), temperature)
     if kind == "unet":
         from beltwatch.inference.neural import NeuralPredictor
 
-        return NeuralPredictor.from_checkpoint(model_dir / "best.pt")
+        return NeuralPredictor.from_checkpoint(model_dir / "best.pt", temperature=temperature)
     raise ValueError(f"unknown model {kind!r}")
 
 
@@ -232,6 +255,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--config", type=Path, default=Path("configs/data.yaml"))
     parser.add_argument("--out-dir", type=Path, default=Path("reports"))
     parser.add_argument("--limit", type=int, help="evaluate only the first N images (smoke runs)")
+    parser.add_argument("--temperature", type=float, default=1.0, help="calibration temperature")
     parser.add_argument(
         "--declared-release",
         help="release name; required for the locked test split and recorded in the report",
@@ -253,7 +277,7 @@ def main(argv: list[str] | None = None) -> int:
     with splits_csv.open(newline="", encoding="utf-8") as fh:
         unseen = {r["image_id"] for r in csv.DictReader(fh) if r["unseen_sequence"] == "True"}
     remap = load_source_remap(data.paths.manifests_dir / f"{name}-validation.json")
-    predictor = load_predictor(args.model, args.model_dir)
+    predictor = load_predictor(args.model, args.model_dir, args.temperature)
 
     results = evaluate_images(predictor, samples, remap)
     report = build_report(
@@ -263,6 +287,7 @@ def main(argv: list[str] | None = None) -> int:
     report["split_manifest_id"] = splits_summary["split_manifest_id"]
     report["declared_release"] = args.declared_release
     report["limited_to"] = args.limit
+    report["temperature"] = args.temperature
 
     out = args.out_dir / f"{predictor.name}-{args.split}"
     out.mkdir(parents=True, exist_ok=True)

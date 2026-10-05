@@ -219,6 +219,16 @@ uv run python scripts/evaluate.py --model unet --model-dir models/unet-resnet18-
 uvx mlflow ui --backend-store-uri sqlite:///mlflow.db
 ```
 
+Calibrate on the calibration split, check the result on val, and include it
+in a release:
+
+```bash
+uv run python -m beltwatch.evaluation.calibration --model unet --model-dir models/unet-resnet18-ce --out reports/calibration-unet
+uv run python scripts/evaluate.py --model unet --model-dir models/unet-resnet18-ce --split val --temperature <T>
+uv run python -m beltwatch.release.bundle --kind unet --model models/unet-resnet18-ce/best.pt \
+    --version <v> --calibration reports/calibration-unet/calibration.json
+```
+
 Full training needs an NVIDIA GPU. See the [training runbook](docs/training.md)
 and the [Colab notebook](notebooks/train_colab.ipynb).
 

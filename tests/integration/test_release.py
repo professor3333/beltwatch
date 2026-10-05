@@ -81,3 +81,72 @@ def test_missing_release_and_pointer(tmp_path: Path) -> None:
         load_release(tmp_path / "nope")
     with pytest.raises(ReleaseError, match=r"active\.json"):
         active_version(tmp_path)
+
+
+def _calibration_report(tmp_path: Path, split: str = "calibration", fitted: bool = True) -> Path:
+    bins = {"ece": 0.1}
+    report = {
+        "split": split,
+        "fitted": fitted,
+        "temperature": 1.7,
+        "n_pixels": 1000,
+        "n_images": 10,
+        "before": {"overall": bins, "foreground": {"ece": 0.2}},
+        "after": {"overall": {"ece": 0.02}, "foreground": {"ece": 0.05}},
+    }
+    path = tmp_path / "calibration.json"
+    path.write_text(json.dumps(report))
+    return path
+
+
+def test_release_takes_temperature_from_calibration_report(tmp_path: Path) -> None:
+    release = build_release(
+        tmp_path / "r",
+        version="v1",
+        kind="all-background",
+        model_path=None,
+        review_policy=POLICY,
+        calibration_report=_calibration_report(tmp_path),
+    )
+    assert release.manifest.temperature == 1.7
+    assert "0.1000 -> 0.0200" in release.manifest.calibration_note
+    assert (tmp_path / "r" / "v1" / "calibration.json").is_file()
+
+
+def test_release_refuses_calibration_not_fitted_on_calibration_split(tmp_path: Path) -> None:
+    with pytest.raises(ReleaseError, match="calibration split"):
+        build_release(
+            tmp_path / "r",
+            version="v1",
+            kind="all-background",
+            model_path=None,
+            review_policy=POLICY,
+            calibration_report=_calibration_report(tmp_path, split="val"),
+        )
+
+
+def test_release_refuses_calibration_that_hurts_foreground(tmp_path: Path) -> None:
+    report = _calibration_report(tmp_path)
+    data = json.loads(report.read_text())
+    data["after"]["foreground"]["ece"] = 0.3  # worse than 0.2 before
+    report.write_text(json.dumps(data))
+
+    with pytest.raises(ReleaseError, match="worsens foreground"):
+        build_release(
+            tmp_path / "r",
+            version="v1",
+            kind="all-background",
+            model_path=None,
+            review_policy=POLICY,
+            calibration_report=report,
+        )
+    release = build_release(
+        tmp_path / "r",
+        version="v2",
+        kind="all-background",
+        model_path=None,
+        review_policy=POLICY,
+        calibration_report=report,
+        allow_foreground_calibration_regression=True,
+    )
+    assert "0.2000 -> 0.3000" in release.manifest.calibration_note
