@@ -1,0 +1,23 @@
+# HTTPS in front of the API. With BELTWATCH_DOMAIN=localhost Caddy uses its own
+# local certificate authority; with a real domain it obtains a public certificate.
+{$BELTWATCH_DOMAIN:localhost} {
+	encode gzip
+
+	# Up to 20 images of 20 MB each, plus form overhead.
+	request_body {
+		max_size 450MB
+	}
+
+	# Operational metrics are scraped inside the Docker network, never exposed publicly.
+	@metrics path /metrics
+	respond @metrics 404
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		X-Frame-Options DENY
+		-Server
+	}
+
+	reverse_proxy api:8000
+}

@@ -1,0 +1,68 @@
+# BeltWatch on one CPU host: HTTPS reverse proxy, API, one inference worker,
+# and optional Prometheus (`docker compose --profile monitoring up -d`).
+# Model releases live in ./model_releases (see model_releases/README.md).
+name: beltwatch
+
+x-app: &app
+  build: .
+  image: beltwatch:${BELTWATCH_IMAGE_TAG:-local}
+  restart: unless-stopped
+  volumes:
+    - data:/data
+    - ./model_releases:/releases
+  environment:
+    BELTWATCH_RETENTION_HOURS: ${BELTWATCH_RETENTION_HOURS:-24}
+    BELTWATCH_METRICS_TOKEN: ${BELTWATCH_METRICS_TOKEN:-}
+
+services:
+  api:
+    <<: *app
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/live')"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  worker:
+    <<: *app
+    command: ["python", "-m", "beltwatch.jobs.worker"]
+    environment:
+      BELTWATCH_RETENTION_HOURS: ${BELTWATCH_RETENTION_HOURS:-24}
+      BELTWATCH_TORCH_THREADS: ${BELTWATCH_TORCH_THREADS:-4}
+    deploy:
+      resources:
+        limits:
+          memory: 3g
+
+  proxy:
+    image: caddy:2.11.6-alpine
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      BELTWATCH_DOMAIN: ${BELTWATCH_DOMAIN:-localhost}
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+  prometheus:
+    image: prom/prometheus:v3.15.0
+    profiles: ["monitoring"]
+    restart: unless-stopped
+    volumes:
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+
+volumes:
+  data:
+  caddy_data:
+  caddy_config:
+  prometheus:
