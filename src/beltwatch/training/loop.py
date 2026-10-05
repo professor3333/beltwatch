@@ -45,8 +45,8 @@ from beltwatch.evaluation.runner import evaluate_images
 from beltwatch.evaluation.segmentation import metrics_from_confusion
 from beltwatch.inference.neural import NeuralPredictor, save_inference_checkpoint
 from beltwatch.inference.preprocessing import PREPROCESSING_VERSION
-from beltwatch.models.registry import build_model
-from beltwatch.models.unet import ENCODER_WEIGHTS, UNetResNet18
+from beltwatch.models.base import SegmentationModel
+from beltwatch.models.registry import build_model, encoder_weights_description
 from beltwatch.training.config import TrainConfig, load_train_config
 from beltwatch.training.losses import segmentation_loss
 
@@ -159,8 +159,8 @@ def train(config: TrainConfig, *, resume_from: Path | None = None) -> TrainResul
     )
 
     model = build_model(config.model).to(device)
-    if not isinstance(model, UNetResNet18):
-        raise TypeError("the training loop currently supports the U-Net only")
+    if not isinstance(model, SegmentationModel):
+        raise TypeError(f"{config.model.name} does not implement SegmentationModel")
     opt = config.optimization
     optimizer = torch.optim.AdamW(
         [
@@ -204,7 +204,7 @@ def train(config: TrainConfig, *, resume_from: Path | None = None) -> TrainResul
         "dataset_md5": data.source.md5,
         "preprocessing_version": PREPROCESSING_VERSION,
         "beltwatch_version": __version__,
-        "encoder_weights": ENCODER_WEIGHTS if config.model.pretrained else "none",
+        "encoder_weights": encoder_weights_description(config.model),
         "torch_version": str(torch.__version__),
         "device": str(device),
         "platform": platform.platform(),

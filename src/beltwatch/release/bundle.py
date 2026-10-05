@@ -37,7 +37,7 @@ from beltwatch.inference.preprocessing import PREPROCESSING_VERSION
 from beltwatch.labels import CLASS_NAMES
 from beltwatch.review.policy import ReviewPolicy, load_review_policy
 
-ModelKind = Literal["unet", "random-forest", "all-background"]
+ModelKind = Literal["unet", "segformer", "random-forest", "all-background"]
 ACTIVE_FILE = "active.json"
 
 DEFAULT_LIMITATIONS = (
@@ -265,7 +265,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Build (and optionally activate) a release.")
     parser.add_argument("--version", required=True)
     parser.add_argument(
-        "--kind", required=True, choices=["unet", "random-forest", "all-background"]
+        "--kind", required=True, choices=["unet", "segformer", "random-forest", "all-background"]
     )
     parser.add_argument("--model", type=Path, help="checkpoint file or model directory")
     parser.add_argument("--review-policy", type=Path, default=Path("configs/review_policy.yaml"))

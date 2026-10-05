@@ -62,6 +62,15 @@ def test_repo_unet_config_is_valid() -> None:
     assert config.model.pretrained
 
 
+def test_segformer_config_matches_unet_except_the_model() -> None:
+    """Matched conditions: only the architecture (and output paths) may differ."""
+    unet = load_train_config(Path("configs/unet.yaml")).model_dump()
+    segformer = load_train_config(Path("configs/segformer_b0.yaml")).model_dump()
+    for key in ("model", "run_name", "output_dir"):
+        unet.pop(key), segformer.pop(key)
+    assert unet == segformer
+
+
 def test_training_smoke_run_writes_checkpoints_and_tracks(
     tiny_data_config: Path, tmp_path: Path
 ) -> None:

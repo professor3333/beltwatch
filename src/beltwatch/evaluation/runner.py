@@ -238,7 +238,7 @@ def load_predictor(kind: str, model_dir: Path | None, temperature: float = 1.0) 
         raise ValueError(f"--model-dir is required for {kind}")
     if kind == "random-forest":
         return TemperatureScaled(RandomForestSegmenter.load(model_dir), temperature)
-    if kind == "unet":
+    if kind in ("unet", "segformer"):
         from beltwatch.inference.neural import NeuralPredictor
 
         return NeuralPredictor.from_checkpoint(model_dir / "best.pt", temperature=temperature)
@@ -248,7 +248,7 @@ def load_predictor(kind: str, model_dir: Path | None, temperature: float = 1.0) 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Evaluate a BeltWatch model on one split.")
     parser.add_argument(
-        "--model", required=True, choices=["all-background", "random-forest", "unet"]
+        "--model", required=True, choices=["all-background", "random-forest", "unet", "segformer"]
     )
     parser.add_argument("--model-dir", type=Path)
     parser.add_argument("--split", required=True, choices=["val", "calibration", "test"])

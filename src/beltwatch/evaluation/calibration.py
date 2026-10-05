@@ -242,7 +242,7 @@ def main(argv: list[str] | None = None) -> int:
     from beltwatch.evaluation.runner import load_predictor
 
     parser = argparse.ArgumentParser(description="Fit or check temperature scaling.")
-    parser.add_argument("--model", required=True, choices=["random-forest", "unet"])
+    parser.add_argument("--model", required=True, choices=["random-forest", "unet", "segformer"])
     parser.add_argument("--model-dir", type=Path, required=True)
     parser.add_argument("--split", default="calibration", choices=["calibration", "val"])
     parser.add_argument(
