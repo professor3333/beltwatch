@@ -4,13 +4,21 @@ import numpy as np
 import pytest
 
 from beltwatch.baselines.features import FeatureConfig, pixel_features
-from beltwatch.baselines.random_forest import RandomForestConfig, RandomForestSegmenter, sample_pixels
+from beltwatch.baselines.random_forest import (
+    RandomForestConfig,
+    RandomForestSegmenter,
+    sample_pixels,
+)
 from beltwatch.baselines.trivial import AllBackground
 from beltwatch.evaluation.segmentation import confusion_matrix, metrics_from_confusion
 from beltwatch.labels import BACKGROUND, CARDBOARD, IGNORE_INDEX, METAL, NUM_CLASSES
 
 SMALL = RandomForestConfig(
-    long_side=48, pixels_per_class=150, n_estimators=20, max_depth=8, seed=0,
+    long_side=48,
+    pixels_per_class=150,
+    n_estimators=20,
+    max_depth=8,
+    seed=0,
     features=FeatureConfig(sigma_max=4.0, num_sigma=3),
 )
 
@@ -35,7 +43,9 @@ def test_all_background_predicts_background_everywhere() -> None:
 
 
 def test_pixel_features_shape_and_dtype() -> None:
-    feats = pixel_features(np.zeros((8, 10, 3), dtype=np.uint8), FeatureConfig(sigma_max=4, num_sigma=3))
+    feats = pixel_features(
+        np.zeros((8, 10, 3), dtype=np.uint8), FeatureConfig(sigma_max=4, num_sigma=3)
+    )
     assert feats.shape[:2] == (8, 10)
     assert feats.dtype == np.float32
     assert feats.shape[2] == 3 * 3 * 4 + 3  # channels x sigmas x (intensity, edge, 2 texture) + Lab
@@ -55,7 +65,9 @@ def test_sample_pixels_is_class_stratified_and_skips_ignore() -> None:
 
 
 def test_random_forest_learns_a_separable_scene_and_round_trips(tmp_path: Path) -> None:
-    xs, ys = zip(*(sample_pixels(*scene(s), SMALL, np.random.default_rng(s)) for s in range(6)), strict=True)
+    xs, ys = zip(
+        *(sample_pixels(*scene(s), SMALL, np.random.default_rng(s)) for s in range(6)), strict=True
+    )
     rf = RandomForestSegmenter(SMALL).fit(np.concatenate(xs), np.concatenate(ys))
 
     rgb, mask = scene(99)
@@ -73,4 +85,6 @@ def test_random_forest_learns_a_separable_scene_and_round_trips(tmp_path: Path) 
 
 def test_random_forest_rejects_ignore_labels() -> None:
     with pytest.raises(ValueError, match="ignore"):
-        RandomForestSegmenter(SMALL).fit(np.zeros((2, 3), np.float32), np.array([0, IGNORE_INDEX], np.uint8))
+        RandomForestSegmenter(SMALL).fit(
+            np.zeros((2, 3), np.float32), np.array([0, IGNORE_INDEX], np.uint8)
+        )

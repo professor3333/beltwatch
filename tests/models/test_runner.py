@@ -82,7 +82,11 @@ def test_slices_and_per_image_csv(
     results = runner.evaluate_images(Oracle(masks), samples, REMAP)
 
     report = runner.build_report(
-        results, model="oracle", split="val", slices={"seq01": {samples[0].image_id}}, n_resamples=20
+        results,
+        model="oracle",
+        split="val",
+        slices={"seq01": {samples[0].image_id}},
+        n_resamples=20,
     )
     runner.write_per_image(results, tmp_path / "per_image.csv")
 
