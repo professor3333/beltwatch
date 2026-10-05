@@ -41,3 +41,14 @@ def test_stage_code_dependencies_exist() -> None:
         for dep in stage["deps"]:
             if dep.startswith("src/"):
                 assert (ROOT / dep).is_file(), f"{name}: {dep}"
+
+
+def test_duplicates_stage_reads_manifest_and_matches_config() -> None:
+    stage = STAGES["duplicates"]
+
+    assert _manifest("images.csv") in stage["deps"]
+    assert _out_paths(stage) == {
+        _manifest("hashes.csv"),
+        _manifest("duplicates.csv"),
+        _manifest("duplicates.json"),
+    }

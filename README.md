@@ -201,7 +201,7 @@ The data pipeline is defined in [`dvc.yaml`](dvc.yaml) and run with
 [DVC](https://dvc.org/):
 
 ```bash
-uv run dvc repro            # download → validate (more stages as they are added)
+uv run dvc repro            # download → validate → duplicates (more stages as they are added)
 ```
 
 The `download` stage (also runnable directly with
@@ -218,7 +218,7 @@ download and verify only.
 configs/data.yaml        Pinned dataset release (record, version, size, MD5) and data paths
 dvc.yaml                 Data pipeline stages
 src/beltwatch/labels.py  Single source of truth for class IDs, names, and the ignore index
-src/beltwatch/data/      Data configuration, verified downloader, and dataset validation
+src/beltwatch/data/      Data configuration, verified downloader, validation, and duplicate audit
 tests/                   Unit and data tests (no network needed)
 docs/design.md           Full design: problem, data, models, evaluation, system, Definition of Done
 docs/dataset_card.md     Dataset provenance, licensing, and known limitations
