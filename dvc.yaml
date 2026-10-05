@@ -53,3 +53,19 @@ stages:
           cache: false
       - data/manifests/zerowaste-f-duplicates.json:
           cache: false
+
+  splits:
+    cmd: python -m beltwatch.data.splits --config configs/data.yaml
+    deps:
+      - data/manifests/zerowaste-f-images.csv
+      - data/manifests/zerowaste-f-duplicates.csv
+      - src/beltwatch/data/config.py
+      - src/beltwatch/data/splits.py
+    params:
+      - configs/data.yaml:
+          - splits
+    outs:
+      - data/splits/zerowaste-f-splits.csv:
+          cache: false
+      - data/splits/zerowaste-f-splits.json:
+          cache: false

@@ -49,7 +49,7 @@ not redistribute any dataset files.
 | Source categories | `1 rigid_plastic · 2 cardboard · 3 metal · 4 soft_plastic` |
 | Source IDs → BeltWatch IDs | `1→3 · 2→1 · 3→4 · 4→2` (`0→0`), derived by name with `beltwatch.labels.build_source_remap` |
 | Overlapping polygons | The official `sem_seg` masks are the authoritative pixel labels; they encode the authors' resolution of overlaps. Polygons are validated for consistency only |
-| Released splits used | The release's `train` / `val` / `test` as the starting point; see the leakage findings below |
+| Released splits used | The release's `train` / `val` / `test`, repaired: see *Split policy* below |
 
 ## Validation
 
@@ -127,11 +127,46 @@ hash-level duplicates, so perceptual hashing alone cannot establish
 independence. Sequence-level grouping is required. Full-dataset counts are
 *pending* the download.
 
-Consequences for evaluation: results on the released test split may be
-optimistic because of shared sequences and temporally adjacent frames. The
-split policy (*pending*) must address this using the duplicate audit and
-sequence IDs, and every reported result must state which split policy it
-uses.
+### Split policy: `official-repaired`
+
+Decided on 2026-10-05, before any model was trained, and configured in
+[`configs/data.yaml`](../configs/data.yaml) (`splits`). Implemented by
+`uv run dvc repro splits`.
+
+1. **Start from the release's train/val/test**, so results stay comparable
+   with published ZeroWaste work.
+2. **Calibration holdout:** whole val sequences `02` and `10` move to a
+   grouped calibration split, used only for temperature scaling.
+3. **Temporal buffer:** a train frame within **500 frames** of any val,
+   calibration, or test frame in the same sequence is excluded. The buffer
+   size is a project convention.
+4. **Duplicate repair:** a train image that is an exact or near-duplicate of
+   any evaluation image is excluded, and so is a val or calibration image
+   that duplicates a test image.
+5. **The test set stays locked.** It contains exactly the release's valid
+   test images; the stage refuses to change test membership.
+6. **Unseen-recording slice:** test images whose sequence has no remaining
+   train images are marked `unseen_sequence` and reported separately.
+
+Projected sizes, computed from the archive's file names before the
+duplicate-based exclusions:
+
+| Split | Images | Sequences |
+|---|---|---|
+| train | 2,888 | 01–07, 09–12 |
+| val | 372 | 01, 03, 04, 12 |
+| calibration | 200 | 02, 10 |
+| test (locked) | 929 | 01, 03, 05, 08, 09 |
+| excluded (buffer) | 114 | 01 (13), 02 (50), 09 (51) |
+| unseen-recording test slice | 215 | 08 |
+
+**What results on these splits support:** performance on held-out time
+windows of the same recordings, plus a single-sequence unseen-recording slice.
+They do **not** support claims about other facilities, cameras, or operating
+conditions. With only one unseen sequence, the unseen-recording slice has no
+meaningful between-group confidence interval, so it is reported as a
+qualitative check. Every reported result names this split policy and the
+split manifest ID from `data/splits/zerowaste-f-splits.json`.
 
 ## Known limitations
 

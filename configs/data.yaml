@@ -24,8 +24,21 @@ duplicates:
   hash_size: 8              # 8x8 -> 64-bit perceptual hashes
   phash_max_hamming: 6      # pairs at or below this pHash distance are near-duplicates
 
+# Split policy "official-repaired" (decided 2026-10-05, before any model results):
+# keep the release's train/val/test for comparability, then repair leakage.
+splits:
+  policy: official-repaired
+  # Whole val sequences moved to a grouped calibration holdout (~200 images).
+  calibration_from_val_sequences: ["02", "10"]
+  # Drop train frames within this many frames of any val/calibration/test frame
+  # in the same sequence (project convention; 500 drops ~114 of 3,002 train frames).
+  train_buffer_frames: 500
+  # Drop train images that are exact or near-duplicates of any evaluation image.
+  exclude_train_duplicates_of_eval: true
+
 # Paths are relative to the repository root.
 paths:
   downloads_dir: data/downloads
   raw_dir: data/raw/zerowaste-f
   manifests_dir: data/manifests
+  splits_dir: data/splits
