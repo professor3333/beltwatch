@@ -6,6 +6,7 @@
 
 Semantic segmentation · visible-coverage estimation · uncertainty-aware review queue · auditable human feedback
 
+[![ci](https://github.com/professor3333/beltwatch/actions/workflows/ci.yml/badge.svg)](https://github.com/professor3333/beltwatch/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/code%20license-MIT-blue.svg)](LICENSE)
 [![Dataset: ZeroWaste-f](https://img.shields.io/badge/dataset-ZeroWaste--f-green.svg)](https://ai.bu.edu/zerowaste/)
 ![Status: design phase](https://img.shields.io/badge/status-design%20phase-orange.svg)
@@ -179,11 +180,25 @@ cardboard, soft plastic, rigid plastic, and metal.
   examples.
 - Visible coverage is not contamination by weight.
 
+## Development
+
+Requires Python 3.12 and [uv](https://docs.astral.sh/uv/).
+
+```bash
+uv sync                       # create .venv and install locked dependencies
+uv run pytest -m "not slow"   # tests (no network or dataset needed)
+uv run ruff check             # lint
+uv run ruff format --check    # formatting
+uv run mypy                   # strict type checking of src/
+```
+
 ## Repository layout
 
 ```
-docs/design.md          Full design: problem, data, models, evaluation, system, Definition of Done
-THIRD_PARTY_NOTICES.md  Dataset and model licensing
+src/beltwatch/labels.py  Single source of truth for class IDs, names, and the ignore index
+tests/                   Unit tests
+docs/design.md           Full design: problem, data, models, evaluation, system, Definition of Done
+THIRD_PARTY_NOTICES.md   Dataset and model licensing
 ```
 
 The source tree (`src/beltwatch/`, `api/`, `frontend/`, `configs/`,
