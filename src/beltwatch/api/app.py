@@ -646,6 +646,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             generate_latest(registry).decode(), media_type="text/plain; version=0.0.4"
         )
 
-    if FRONTEND_DIR.is_dir():
-        app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
+    frontend = settings.frontend_dir or FRONTEND_DIR
+    if frontend.is_dir():
+        app.mount("/", StaticFiles(directory=frontend, html=True), name="frontend")
     return app

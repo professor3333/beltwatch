@@ -239,9 +239,12 @@ curl -F "files=@frame.png" \
 curl http://localhost:8000/v1/audits/<audit_id>
 ```
 
-Interactive API docs are served at `http://localhost:8000/docs`. The
-endpoints, failure handling, and data model are described in
-[`docs/architecture.md`](docs/architecture.md).
+The review UI is at `http://localhost:8000/`: upload snapshots, draw the
+inspection region, follow progress, work through the priority-ordered review
+queue (overlay, original, and uncertainty views with estimated visible
+coverage), record decisions, and export the audit record. Interactive API
+docs are at `http://localhost:8000/docs`. The endpoints, failure handling, and
+data model are described in [`docs/architecture.md`](docs/architecture.md).
 
 ### Getting the data
 
@@ -282,6 +285,7 @@ src/beltwatch/api/       FastAPI application and settings
 src/beltwatch/jobs/      SQLite job store, per-image pipeline, inference worker
 src/beltwatch/review/    Review policy (routing, priority, random audits)
 src/beltwatch/release/   Versioned, checksummed model release bundles
+frontend/                Review UI (static HTML/CSS/JS, no external dependencies)
 configs/review_policy.yaml  Versioned review thresholds
 data/manifests/, data/splits/  Git-tracked pipeline outputs (written by the first full run)
 tests/                   Unit and data tests (no network needed)
