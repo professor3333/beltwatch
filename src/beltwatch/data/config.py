@@ -33,6 +33,13 @@ class LayoutConfig(_Frozen):
     annotations_file: str
 
 
+class DuplicatesConfig(_Frozen):
+    """Perceptual-hash settings for the duplicate audit."""
+
+    hash_size: int = Field(ge=4, le=8)
+    phash_max_hamming: int = Field(ge=0, le=64)
+
+
 class PathsConfig(_Frozen):
     downloads_dir: Path
     raw_dir: Path
@@ -42,6 +49,7 @@ class PathsConfig(_Frozen):
 class DataConfig(_Frozen):
     source: SourceConfig
     layout: LayoutConfig
+    duplicates: DuplicatesConfig
     paths: PathsConfig
 
 

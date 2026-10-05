@@ -19,6 +19,11 @@ layout:
   masks_subdir: sem_seg
   annotations_file: labels.json
 
+# Duplicate / near-duplicate audit (reporting only; exclusions happen at split time).
+duplicates:
+  hash_size: 8              # 8x8 -> 64-bit perceptual hashes
+  phash_max_hamming: 6      # pairs at or below this pHash distance are near-duplicates
+
 # Paths are relative to the repository root.
 paths:
   downloads_dir: data/downloads

@@ -103,10 +103,34 @@ Measured from the archive index:
   differ, but in a sampled pair the class pixel counts are within a few
   percent of each other, so they are likely near-duplicates.
 
+### Duplicate audit
+
+`uv run dvc repro duplicates` computes 64-bit perceptual hashes (pHash and
+dHash) for every valid image. It reports byte-identical groups, pairs within
+the configured pHash Hamming distance (`duplicates.phash_max_hamming`,
+default 6), and, for each sequence present in several splits, the smallest
+frame gap between splits. Outputs: `zerowaste-f-hashes.csv`,
+`zerowaste-f-duplicates.csv`, and `zerowaste-f-duplicates.json`.
+
+Threshold calibration on a 22-image real sample (train and val):
+
+| Pair | pHash distance |
+|---|---|
+| `09_frame_002000` vs `09_frame_002000-2` | 0 (near-duplicate) |
+| Consecutive frames 10 apart (sequence 04) | 14–22 |
+| Consecutive train frames (sequence 01) | 16–18 |
+| Median over all pairs | 28 |
+
+The default threshold separates true near-duplicates from neighbouring
+frames. Neighbouring frames are still strongly correlated without being
+hash-level duplicates, so perceptual hashing alone cannot establish
+independence. Sequence-level grouping is required. Full-dataset counts are
+*pending* the download.
+
 Consequences for evaluation: results on the released test split may be
 optimistic because of shared sequences and temporally adjacent frames. The
-duplicate and near-duplicate audit and the split policy (*pending*) must
-address this, and every reported result must state which split policy it
+split policy (*pending*) must address this using the duplicate audit and
+sequence IDs, and every reported result must state which split policy it
 uses.
 
 ## Known limitations
