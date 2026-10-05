@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BeltWatch</title>
+  <meta name="description" content="Review unwanted materials in a paper-recycling stream.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">◧</span>
+      <div>
+        <h1>BeltWatch</h1>
+        <p class="tagline">Review unwanted materials in a paper-recycling stream.</p>
+      </div>
+    </div>
+    <button id="model-button" class="model-badge" type="button" aria-haspopup="dialog">Model: loading…</button>
+  </header>
+
+  <main>
+    <section id="upload-view" class="card" aria-labelledby="upload-title">
+      <h2 id="upload-title">1. Upload conveyor snapshots</h2>
+      <div class="upload-grid">
+        <div>
+          <label class="dropzone" id="dropzone">
+            <input id="files" type="file" accept="image/png,image/jpeg,image/webp" multiple>
+            <strong>Choose images</strong> or drop them here
+            <span class="hint">PNG, JPEG, or WebP · up to 20 per audit</span>
+          </label>
+          <ul id="file-list" class="file-list"></ul>
+          <label class="field">Camera ID
+            <input id="camera-id" type="text" value="paper-line-demo" maxlength="64" pattern="[\w.\-]+">
+          </label>
+        </div>
+        <div>
+          <p class="field-label">2. Inspection region <span class="hint">click to add corners on the first image</span></p>
+          <div class="region-editor">
+            <canvas id="region-canvas" width="640" height="360" aria-label="Inspection region editor"></canvas>
+            <p id="region-empty" class="placeholder">Choose images to draw the region.</p>
+          </div>
+          <div class="row">
+            <button id="region-full" type="button" class="secondary">Full frame</button>
+            <button id="region-clear" type="button" class="secondary">Clear points</button>
+            <span id="region-status" class="hint">Region: full frame</span>
+          </div>
+        </div>
+      </div>
+      <label class="consent"><input id="consent" type="checkbox"> Corrections from this audit may be used to improve future models (after annotation review).</label>
+      <div class="row">
+        <button id="submit" type="button" class="primary" disabled>Start audit</button>
+        <span id="upload-error" class="error" role="alert"></span>
+      </div>
+    </section>
+
+    <section id="audit-view" class="card hidden" aria-labelledby="audit-title">
+      <div class="row spread">
+        <h2 id="audit-title">Audit</h2>
+        <div class="row">
+          <a id="report-json" class="button secondary" target="_blank" rel="noopener">Report (JSON)</a>
+          <a id="report-csv" class="button secondary">Report (CSV)</a>
+          <button id="delete-audit" type="button" class="danger">Delete audit</button>
+          <button id="new-audit" type="button" class="secondary">New audit</button>
+        </div>
+      </div>
+      <p id="audit-meta" class="meta"></p>
+      <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100"><div id="progress-bar"></div></div>
+      <p id="audit-status" class="meta"></p>
+      <div class="audit-grid">
+        <div>
+          <h3>Review queue <span class="hint">highest priority first</span></h3>
+          <ol id="queue" class="image-list"></ol>
+          <h3>Other images</h3>
+          <ul id="others" class="image-list"></ul>
+        </div>
+        <div id="detail" class="detail hidden">
+          <div class="row spread">
+            <h3 id="detail-title">Image</h3>
+            <div class="toggle" role="tablist" aria-label="View">
+              <button type="button" data-view="overlay" class="active" role="tab">Overlay</button>
+              <button type="button" data-view="original" role="tab">Original</button>
+              <button type="button" data-view="uncertainty" role="tab">Uncertainty</button>
+            </div>
+          </div>
+          <div class="viewer"><img id="detail-image" alt="Selected image with segmentation overlay"></div>
+          <div class="legend">
+            <span><i class="sw cardboard"></i>Cardboard</span><span><i class="sw soft_plastic"></i>Soft plastic</span>
+            <span><i class="sw rigid_plastic"></i>Rigid plastic</span><span><i class="sw metal"></i>Metal</span>
+            <span><i class="sw uncertain"></i>Uncertain</span><span><i class="sw outside"></i>Outside region</span>
+          </div>
+          <div id="detail-route" class="route"></div>
+          <table class="coverage">
+            <caption>Estimated visible coverage of the inspection region <span class="hint">(not contamination by weight)</span></caption>
+            <tbody id="coverage-rows"></tbody>
+          </table>
+          <p id="detail-notes" class="meta"></p>
+
+          <form id="feedback-form" class="feedback">
+            <fieldset>
+              <legend>Your decision</legend>
+              <label><input type="radio" name="decision" value="confirmed" required> Confirm</label>
+              <label><input type="radio" name="decision" value="corrected"> Correct</label>
+              <label><input type="radio" name="decision" value="rejected"> Reject (no target material)</label>
+              <label><input type="radio" name="decision" value="needs_retake"> Needs retake</label>
+            </fieldset>
+            <fieldset>
+              <legend>Materials actually present</legend>
+              <label><input type="checkbox" name="materials" value="cardboard"> Cardboard</label>
+              <label><input type="checkbox" name="materials" value="soft_plastic"> Soft plastic</label>
+              <label><input type="checkbox" name="materials" value="rigid_plastic"> Rigid plastic</label>
+              <label><input type="checkbox" name="materials" value="metal"> Metal</label>
+            </fieldset>
+            <div class="row">
+              <input id="reviewer" type="text" placeholder="Reviewer (optional)" maxlength="64">
+              <input id="note" type="text" placeholder="Note (optional)" maxlength="1000" class="grow">
+              <button type="submit" class="primary">Save decision</button>
+            </div>
+            <span id="feedback-status" class="meta" role="status"></span>
+          </form>
+          <h4>Decision history <span class="hint">append-only; the original prediction is kept</span></h4>
+          <ul id="history" class="history"></ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="model-dialog" aria-labelledby="model-title">
+    <h2 id="model-title">Active model</h2>
+    <dl id="model-details" class="model-details"></dl>
+    <h3>Limitations</h3>
+    <ul id="model-limitations"></ul>
+    <form method="dialog"><button class="secondary">Close</button></form>
+  </dialog>
+
+  <footer class="footer">
+    Data: ZeroWaste-f (Bashkirova et al.), attributed, noncommercial use · Coverage is visible image area, not mass.
+  </footer>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

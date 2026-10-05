@@ -24,6 +24,8 @@ class Settings(BaseModel):
     metrics_token: str | None = None
     device: str = "cpu"
     torch_threads: int | None = None
+    frontend_dir: Path | None = None
+    """Static review UI; defaults to the repository's ``frontend/`` directory."""
 
     @property
     def database_path(self) -> Path:
