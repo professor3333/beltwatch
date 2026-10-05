@@ -73,7 +73,22 @@ uv run python scripts/train.py --config configs/unet.yaml --resume models/unet-r
 On Colab, put `output_dir` and `mlflow.db` on Google Drive (see the notebook)
 so checkpoints survive a disconnect.
 
-## 5. Inspect runs
+## 5. SegFormer-B0 (challenger)
+
+```bash
+uv run python scripts/train.py --config configs/segformer_b0.yaml --max-steps 300 --max-val-images 50
+uv run python scripts/train.py --config configs/segformer_b0.yaml
+uv run python scripts/evaluate.py --model segformer --model-dir models/segformer-b0-ce --split val
+```
+
+Its configuration matches the U-Net's in data, preprocessing, augmentation,
+schedule, and loss, and a test enforces this, so the comparison isolates the
+architecture. Choose the deployed model on validation foreground macro IoU,
+minority-class IoU, memory, and measured CPU latency. A well-tuned U-Net is a
+legitimate winner. The MiT-B0 weights are for noncommercial research and
+evaluation only.
+
+## 6. Inspect runs
 
 ```bash
 uvx mlflow ui --backend-store-uri sqlite:///mlflow.db

@@ -28,23 +28,29 @@ BeltWatch with them must follow them.
 
 ## Pretrained models
 
-### SegFormer (NVIDIA)
+### SegFormer / MiT-B0 encoder (NVIDIA)
 
-- **Source:** <https://github.com/NVlabs/SegFormer>
-- **License:** the original SegFormer release is limited to **noncommercial
-  research and evaluation** use. See
+- **Source:** <https://github.com/NVlabs/SegFormer>. Weights:
+  [`nvidia/mit-b0`](https://huggingface.co/nvidia/mit-b0) on Hugging Face,
+  where the license is listed as `other`.
+- **License:** NVIDIA's license for the original SegFormer release limits use
+  to **noncommercial research and evaluation**. See
   <https://github.com/NVlabs/SegFormer#license>.
-- **Usage in BeltWatch:** a candidate challenger model (SegFormer-B0). Each
-  model release built from SegFormer weights will record the exact checkpoint
-  and its license.
+- **Usage in BeltWatch:** encoder initialization for the SegFormer-B0
+  challenger (`configs/segformer_b0.yaml`). Training runs and checkpoints
+  record the weight source in the `encoder_weights` lineage tag, and any
+  release built from them inherits this restriction.
 
-### ResNet-18 ImageNet weights
+### ResNet-18 ImageNet weights (torchvision)
 
+- **Source:** `torchvision.models.ResNet18_Weights.IMAGENET1K_V1`.
+- **License:** torchvision is BSD-3-Clause. The weights were trained on
+  ImageNet-1k, whose terms restrict use to noncommercial research.
 - **Usage in BeltWatch:** encoder initialization for the U-Net baseline.
-- **License:** recorded with the exact weight source when the baseline is
-  implemented.
 
 ## Software dependencies
 
-Python package licenses will be listed here once the dependency set is
-locked.
+Key libraries: PyTorch and torchvision (BSD-3-Clause), Hugging Face
+Transformers (Apache-2.0), scikit-learn and scikit-image (BSD-3-Clause),
+FastAPI (MIT), MLflow (Apache-2.0), DVC (Apache-2.0), NumPy and Pillow
+(BSD-style / HPND). The full, pinned dependency set is in `uv.lock`.

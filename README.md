@@ -301,9 +301,9 @@ src/beltwatch/inference/ Shared preprocessing and coverage computation used by t
 src/beltwatch/evaluation/ Segmentation metrics, coverage error, review workload, group bootstrap,
                          and the evaluation runner used for every model
 src/beltwatch/baselines/ All-background sanity check and the random-forest baseline
-src/beltwatch/models/    U-Net with a pretrained ResNet-18 encoder
+src/beltwatch/models/    U-Net (ResNet-18 encoder) and SegFormer-B0 (MiT-B0 encoder)
 src/beltwatch/training/  Training configuration, losses, and the tracked, resumable training loop
-configs/unet.yaml        U-Net training configuration
+configs/unet.yaml, configs/segformer_b0.yaml   Matched training configurations
 notebooks/               Colab notebook for GPU training
 scripts/evaluate.py      Evaluate a model on a split (the test split requires a declared release)
 scripts/train.py         Train a model from a YAML config
