@@ -7,6 +7,7 @@
 Semantic segmentation · visible-coverage estimation · uncertainty-aware review queue · auditable human feedback
 
 [![ci](https://github.com/professor3333/beltwatch/actions/workflows/ci.yml/badge.svg)](https://github.com/professor3333/beltwatch/actions/workflows/ci.yml)
+[![container](https://github.com/professor3333/beltwatch/actions/workflows/container.yml/badge.svg)](https://github.com/professor3333/beltwatch/actions/workflows/container.yml)
 [![License: MIT](https://img.shields.io/badge/code%20license-MIT-blue.svg)](LICENSE)
 [![Dataset: ZeroWaste-f](https://img.shields.io/badge/dataset-ZeroWaste--f-green.svg)](https://ai.bu.edu/zerowaste/)
 ![Status: in development](https://img.shields.io/badge/status-in%20development-orange.svg)
@@ -246,6 +247,21 @@ coverage), record decisions, and export the audit record. Interactive API
 docs are at `http://localhost:8000/docs`. The endpoints, failure handling, and
 data model are described in [`docs/architecture.md`](docs/architecture.md).
 
+### Deploying with Docker Compose
+
+```bash
+docker compose build
+docker compose run --rm --no-deps --user root api \
+    python -m beltwatch.release.activate <version> --reason "initial" --releases-dir /releases
+docker compose up -d --wait            # HTTPS proxy, API, worker
+python3 scripts/deploy_smoke.py --base-url https://localhost --insecure --expect-version <version>
+```
+
+The release, rollback, backup, and monitoring procedures are in
+[`docs/operations.md`](docs/operations.md). CI builds the image and performs a
+real deployment, release switch, and rollback on every change to the serving
+code.
+
 ### Getting the data
 
 The data pipeline is defined in [`dvc.yaml`](dvc.yaml) and run with
@@ -286,6 +302,8 @@ src/beltwatch/jobs/      SQLite job store, per-image pipeline, inference worker
 src/beltwatch/review/    Review policy (routing, priority, random audits)
 src/beltwatch/release/   Versioned, checksummed model release bundles
 frontend/                Review UI (static HTML/CSS/JS, no external dependencies)
+Dockerfile, compose.yaml, docker/   Serving image, Compose stack, Caddy and Prometheus config
+scripts/deploy_smoke.py  Deployment smoke test (standard library only)
 configs/review_policy.yaml  Versioned review thresholds
 data/manifests/, data/splits/  Git-tracked pipeline outputs (written by the first full run)
 tests/                   Unit and data tests (no network needed)
@@ -294,6 +312,7 @@ docs/dataset_card.md     Dataset provenance, licensing, split policy, and known 
 docs/evaluation.md       Evaluation protocol: metrics, coverage, review workload, confidence intervals
 docs/training.md         GPU training runbook
 docs/architecture.md     Service architecture, failure handling, data model
+docs/operations.md       Deploy, release, rollback, backup, monitoring
 THIRD_PARTY_NOTICES.md   Dataset and model licensing
 ```
 

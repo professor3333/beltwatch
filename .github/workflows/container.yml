@@ -1,0 +1,82 @@
+name: container
+
+# Builds the serving image and verifies a real deployment on the runner:
+# the Docker Compose stack behind the HTTPS proxy, a smoke test with real
+# inference, a release switch, and a rollback.
+on:
+  pull_request:
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - compose.yaml
+      - docker/**
+      - pyproject.toml
+      - uv.lock
+      - src/**
+      - frontend/**
+      - configs/**
+      - scripts/deploy_smoke.py
+      - .github/workflows/container.yml
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Build the image
+        run: docker compose build
+
+      - name: Create smoke-test releases
+        run: |
+          mkdir -p model_releases
+          for version in smoke-a smoke-b; do
+            docker compose run --rm --no-deps --user root api \
+              python -m beltwatch.release.bundle --kind all-background --version "$version" \
+              --releases-dir /releases --note "CI deploy smoke test; not a trained model"
+          done
+          docker compose run --rm --no-deps --user root api \
+            python -m beltwatch.release.activate smoke-a --reason "CI: initial" --releases-dir /releases
+
+      - name: Start the stack
+        run: docker compose up -d --wait api worker proxy
+
+      - name: Smoke test through the HTTPS proxy
+        run: python3 scripts/deploy_smoke.py --base-url https://localhost --insecure --expect-version smoke-a --ready-timeout 180
+
+      - name: Switch release
+        run: |
+          docker compose run --rm --no-deps --user root api \
+            python -m beltwatch.release.activate smoke-b --reason "CI: upgrade" --releases-dir /releases
+          python3 scripts/deploy_smoke.py --base-url https://localhost --insecure --expect-version smoke-b
+
+      - name: Roll back
+        run: |
+          docker compose run --rm --no-deps --user root api \
+            python -m beltwatch.release.activate smoke-a --reason "CI: rollback" --releases-dir /releases
+          python3 scripts/deploy_smoke.py --base-url https://localhost --insecure --expect-version smoke-a
+
+      - name: Metrics are not exposed publicly
+        run: test "$(curl -sk -o /dev/null -w '%{http_code}' https://localhost/metrics)" = "404"
+
+      - name: Image size
+        run: docker image ls beltwatch
+
+      - name: Service logs
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
