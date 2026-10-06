@@ -28,6 +28,17 @@ from beltwatch.models.registry import ModelConfig, build_model
 CHECKPOINT_FORMAT = "beltwatch-checkpoint-v1"
 
 
+def atomic_torch_save(obj: Any, path: Path) -> None:
+    """Save ``obj`` so ``path`` is either the old file or the complete new one.
+
+    A session that dies mid-write (a Colab disconnect, for example) leaves only
+    a stray ``.tmp`` file behind, never a truncated checkpoint.
+    """
+    tmp = path.with_name(path.name + ".tmp")
+    torch.save(obj, tmp)
+    tmp.replace(path)
+
+
 def save_inference_checkpoint(
     path: Path,
     model: nn.Module,
@@ -36,7 +47,7 @@ def save_inference_checkpoint(
     metadata: dict[str, Any],
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    torch.save(
+    atomic_torch_save(
         {
             "format": CHECKPOINT_FORMAT,
             "model_config": model_config.model_dump(),

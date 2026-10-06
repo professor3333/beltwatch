@@ -1,5 +1,5 @@
 # --- Datasets and generated data (versioned with DVC, never git) ---
-data/downloads/
+data/downloads
 data/raw/
 data/interim/
 data/processed/

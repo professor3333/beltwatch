@@ -9,7 +9,7 @@ import torch
 from beltwatch.data.augment import AugmentConfig
 from beltwatch.data.masks import load_mask
 from beltwatch.evaluation.segmentation import confusion_matrix, metrics_from_confusion
-from beltwatch.inference.neural import NeuralPredictor
+from beltwatch.inference.neural import NeuralPredictor, atomic_torch_save
 from beltwatch.inference.preprocessing import PreprocessConfig, load_rgb
 from beltwatch.models.registry import ModelConfig
 from beltwatch.training.config import (
@@ -100,6 +100,24 @@ def test_resume_continues_from_latest(tiny_data_config: Path, tmp_path: Path) ->
     )
 
     assert resumed.global_step == 4
+
+
+def test_interrupted_checkpoint_write_keeps_previous_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "latest.pt"
+    atomic_torch_save({"epoch": 1}, path)
+
+    def die_mid_write(obj: object, f: Path) -> None:
+        Path(f).write_bytes(b"trunc")
+        raise RuntimeError("session disconnected")
+
+    monkeypatch.setattr(torch, "save", die_mid_write)
+    with pytest.raises(RuntimeError):
+        atomic_torch_save({"epoch": 2}, path)
+
+    monkeypatch.undo()
+    assert torch.load(path, weights_only=True) == {"epoch": 1}
 
 
 def test_checkpoint_round_trip_predicts_full_size(tiny_data_config: Path, tmp_path: Path) -> None:
