@@ -43,7 +43,11 @@ from beltwatch.data.masks import load_source_remap
 from beltwatch.evaluation.coverage import coverage_errors
 from beltwatch.evaluation.runner import evaluate_images
 from beltwatch.evaluation.segmentation import metrics_from_confusion
-from beltwatch.inference.neural import NeuralPredictor, save_inference_checkpoint
+from beltwatch.inference.neural import (
+    NeuralPredictor,
+    atomic_torch_save,
+    save_inference_checkpoint,
+)
 from beltwatch.inference.preprocessing import PREPROCESSING_VERSION
 from beltwatch.models.base import SegmentationModel
 from beltwatch.models.registry import build_model, encoder_weights_description
@@ -368,7 +372,7 @@ def _save_latest(
     config: TrainConfig,
     **progress: Any,
 ) -> None:
-    torch.save(
+    atomic_torch_save(
         {
             "model": model.state_dict(),
             "optimizer": optimizer.state_dict(),

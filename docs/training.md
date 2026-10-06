@@ -70,8 +70,18 @@ If a session ends early, resume:
 uv run python scripts/train.py --config configs/unet.yaml --resume models/unet-resnet18-ce/latest.pt
 ```
 
-On Colab, put `output_dir` and `mlflow.db` on Google Drive (see the notebook)
-so checkpoints survive a disconnect.
+`latest.pt` is written at the end of every epoch, so a resume loses at most
+the epoch in progress. Checkpoints are written to a temporary file and then
+renamed, so a session that dies mid-write leaves the previous checkpoint
+intact.
+
+On Colab, the notebook keeps the archive, `output_dir`, reports, `mlflow.db`
+and a copy of the dataset-version files on Google Drive (about 9 GB). After a
+disconnect, reconnect and run all cells from the top: the archive is verified
+rather than downloaded again, a trained forest is reused, and training resumes
+from `latest.pt`. The 300-step timing run writes to its own directory, so
+running it again does not overwrite the full run's checkpoint. Each resume
+opens a new MLflow run. The interrupted run stays marked as running.
 
 ## 5. SegFormer-B0 (challenger)
 
