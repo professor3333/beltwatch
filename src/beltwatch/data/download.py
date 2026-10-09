@@ -5,18 +5,21 @@ Usage::
     uv run python -m beltwatch.data.download [--config configs/data.yaml] [--skip-extract]
 
 The archive is streamed to a ``.part`` file (resumed with an HTTP Range request
-after an interruption), verified against the pinned size and MD5, and only then
-renamed into place. Extraction goes to a temporary directory that is renamed
-into place when complete, so a half-extracted dataset never looks finished.
+after an interruption, including a connection the server closes early),
+verified against the pinned size and MD5, and only then renamed into place.
+Extraction goes to a temporary directory that is renamed into place when
+complete, so a half-extracted dataset never looks finished.
 A download record with the *measured* image count is written to the manifests
 directory.
 """
 
 import argparse
 import hashlib
+import http.client
 import json
 import logging
 import shutil
+import time
 import zipfile
 from datetime import UTC, datetime
 from pathlib import Path
@@ -38,6 +41,10 @@ class _Readable(Protocol):
 
 class ChecksumError(RuntimeError):
     """A file does not match its pinned size or checksum."""
+
+
+class IncompleteDownloadError(RuntimeError):
+    """The download stopped short of the pinned size; the ``.part`` file is kept."""
 
 
 class UnsafeArchiveError(RuntimeError):
@@ -62,12 +69,24 @@ def verify(path: Path, source: SourceConfig) -> None:
         raise ChecksumError(f"{path}: expected md5 {source.md5}, found {actual}")
 
 
-def download(source: SourceConfig, downloads_dir: Path, *, timeout: float = 60.0) -> Path:
+def download(
+    source: SourceConfig,
+    downloads_dir: Path,
+    *,
+    timeout: float = 60.0,
+    max_attempts: int = 20,
+    retry_wait: float = 10.0,
+) -> Path:
     """Download ``source`` into ``downloads_dir`` and return the verified archive path.
 
     An existing archive is verified and reused. If it fails verification it is
     left untouched and :class:`ChecksumError` is raised, so a bad file is never
     silently replaced or deleted.
+
+    A stream that ends early or fails with a network error is resumed from the
+    ``.part`` file, up to ``max_attempts`` requests. A short ``.part`` file is
+    always kept so a later run resumes it; only a full-size file with the wrong
+    MD5 is removed, because it cannot be resumed.
     """
     downloads_dir.mkdir(parents=True, exist_ok=True)
     dest = downloads_dir / source.filename
@@ -77,22 +96,36 @@ def download(source: SourceConfig, downloads_dir: Path, *, timeout: float = 60.0
         return dest
 
     part = dest.with_name(dest.name + ".part")
-    offset = part.stat().st_size if part.exists() else 0
-    if offset > source.size_bytes:
-        log.warning("discarding oversized partial download %s", part)
-        part.unlink()
-        offset = 0
+    for attempt in range(1, max_attempts + 1):
+        offset = _size(part)
+        if offset > source.size_bytes:
+            log.warning("discarding oversized partial download %s", part)
+            part.unlink()
+            offset = 0
+        if offset == source.size_bytes:
+            break
+        if attempt > 1:
+            time.sleep(retry_wait)
+        try:
+            _fetch(source, part, offset=offset, timeout=timeout)
+        except (OSError, http.client.HTTPException) as exc:
+            log.warning("attempt %d/%d interrupted: %r", attempt, max_attempts, exc)
+            continue
+        if _size(part) < source.size_bytes:
+            log.warning(
+                "attempt %d/%d: connection closed at byte %d of %d",
+                attempt,
+                max_attempts,
+                _size(part),
+                source.size_bytes,
+            )
 
-    if offset < source.size_bytes:
-        headers = {"Range": f"bytes={offset}-"} if offset else {}
-        with urlopen(Request(source.url, headers=headers), timeout=timeout) as resp:
-            if offset and resp.status != 206:
-                log.warning("server ignored the resume request; restarting download")
-                offset = 0
-            if offset:
-                log.info("resuming %s at byte %d", source.filename, offset)
-            _stream_to(resp, part, offset=offset, total=source.size_bytes)
-
+    size = _size(part)
+    if size != source.size_bytes:
+        raise IncompleteDownloadError(
+            f"{part}: {size} of {source.size_bytes} bytes after {max_attempts} attempts; "
+            "the partial file is kept, run again to resume"
+        )
     try:
         verify(part, source)
     except ChecksumError:
@@ -101,6 +134,21 @@ def download(source: SourceConfig, downloads_dir: Path, *, timeout: float = 60.0
     part.replace(dest)
     log.info("downloaded and verified %s", dest)
     return dest
+
+
+def _size(path: Path) -> int:
+    return path.stat().st_size if path.exists() else 0
+
+
+def _fetch(source: SourceConfig, part: Path, *, offset: int, timeout: float) -> None:
+    headers = {"Range": f"bytes={offset}-"} if offset else {}
+    with urlopen(Request(source.url, headers=headers), timeout=timeout) as resp:
+        if offset and resp.status != 206:
+            log.warning("server ignored the resume request; restarting download")
+            offset = 0
+        if offset:
+            log.info("resuming %s at byte %d", source.filename, offset)
+        _stream_to(resp, part, offset=offset, total=source.size_bytes)
 
 
 def _stream_to(resp: _Readable, part: Path, *, offset: int, total: int) -> None:

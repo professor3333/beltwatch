@@ -20,6 +20,9 @@ class FakeServer:
     url: str
     payload: bytes = PAYLOAD
     honor_range: bool = True
+    # Close the connection after this many body bytes, for the next `truncations` responses.
+    truncate_after: int = 4000
+    truncations: int = 0
     range_headers: list[str | None] = field(default_factory=list)
 
 
@@ -38,6 +41,9 @@ def server() -> Iterator[FakeServer]:
             self.send_response(status)
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
+            if state.truncations:
+                state.truncations -= 1
+                body = body[: state.truncate_after]
             self.wfile.write(body)
 
         def log_message(self, *args: object) -> None:
@@ -102,6 +108,36 @@ def test_download_resumes_partial_file(server: FakeServer, tmp_path: Path) -> No
 
     assert server.range_headers == ["bytes=5000-"]
     assert archive.read_bytes() == PAYLOAD
+
+
+def test_download_resumes_after_server_closes_early(server: FakeServer, tmp_path: Path) -> None:
+    server.truncations = 2
+
+    archive = dl.download(make_source(server.url), tmp_path, retry_wait=0)
+
+    assert server.range_headers == [None, "bytes=4000-", "bytes=8000-"]
+    assert archive.read_bytes() == PAYLOAD
+
+
+def test_incomplete_download_keeps_partial_file(server: FakeServer, tmp_path: Path) -> None:
+    server.truncations = 99
+
+    with pytest.raises(dl.IncompleteDownloadError, match="12000 of 16384"):
+        dl.download(make_source(server.url), tmp_path, max_attempts=3, retry_wait=0)
+
+    assert (tmp_path / "archive.zip.part").read_bytes() == PAYLOAD[:12000]
+    assert not (tmp_path / "archive.zip").exists()
+
+
+def test_download_retries_network_errors(tmp_path: Path) -> None:
+    # Nothing listens on this port, so every attempt fails with a connection error.
+    source = make_source("http://127.0.0.1:9/archive.zip")
+    (tmp_path / "archive.zip.part").write_bytes(PAYLOAD[:5000])
+
+    with pytest.raises(dl.IncompleteDownloadError, match="5000 of 16384"):
+        dl.download(source, tmp_path, max_attempts=2, retry_wait=0)
+
+    assert (tmp_path / "archive.zip.part").read_bytes() == PAYLOAD[:5000]
 
 
 def test_download_restarts_when_server_ignores_range(server: FakeServer, tmp_path: Path) -> None:
