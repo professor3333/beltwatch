@@ -76,9 +76,12 @@ renamed, so a session that dies mid-write leaves the previous checkpoint
 intact.
 
 On Colab, the notebook keeps the archive, `output_dir`, reports, `mlflow.db`
-and a copy of the dataset-version files on Google Drive (about 9 GB). After a
-disconnect, reconnect and run all cells from the top: the archive is verified
-rather than downloaded again, a trained forest is reused, and training resumes
+and a copy of the dataset-version files on Google Drive (about 9 GB). The
+archive downloads to the Colab disk and is copied to Drive only after it is
+verified. Streaming it straight into Drive ran at about 1 MB/s and Zenodo
+dropped the connection. The setup cell pulls the latest code into a reused
+runtime. After a disconnect, reconnect and run all cells from the top: the
+archive is copied back from Drive and verified rather than downloaded again, a trained forest is reused, and training resumes
 from `latest.pt`. The 300-step timing run writes to its own directory, so
 running it again does not overwrite the full run's checkpoint. Each resume
 opens a new MLflow run. The interrupted run stays marked as running.
