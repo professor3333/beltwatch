@@ -191,7 +191,9 @@ def train(config: TrainConfig, *, resume_from: Path | None = None) -> TrainResul
     latest_path, best_path = out_dir / "latest.pt", out_dir / "best.pt"
     start_epoch, global_step, best_metric, best_epoch, stale = 0, 0, -math.inf, -1, 0
     if resume_from is not None:
-        state = torch.load(resume_from, map_location=device, weights_only=False)
+        # Load on the CPU: RNG states must be CPU tensors, and load_state_dict moves the
+        # model and optimizer tensors to the model's device.
+        state = torch.load(resume_from, map_location="cpu", weights_only=False)
         model.load_state_dict(state["model"])
         optimizer.load_state_dict(state["optimizer"])
         scheduler.load_state_dict(state["scheduler"])

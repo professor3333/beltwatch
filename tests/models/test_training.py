@@ -102,6 +102,25 @@ def test_resume_continues_from_latest(tiny_data_config: Path, tmp_path: Path) ->
     assert resumed.global_step == 4
 
 
+ACCELERATOR = (
+    "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else None
+)
+
+
+@pytest.mark.skipif(ACCELERATOR is None, reason="needs a CUDA or MPS device")
+def test_resume_on_an_accelerator(tiny_data_config: Path, tmp_path: Path) -> None:
+    # RNG states must be restored from CPU tensors; CPU-only CI cannot catch this.
+    def on_accelerator(epochs: int) -> TrainConfig:
+        config = tiny_config(tiny_data_config, tmp_path, epochs=epochs)
+        runtime = config.runtime.model_copy(update={"device": ACCELERATOR})
+        return config.model_copy(update={"runtime": runtime})
+
+    first = train(on_accelerator(1))
+    resumed = train(on_accelerator(2), resume_from=first.latest_checkpoint)
+
+    assert resumed.global_step == 4
+
+
 def test_interrupted_checkpoint_write_keeps_previous_file(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
