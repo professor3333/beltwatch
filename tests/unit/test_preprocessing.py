@@ -43,6 +43,20 @@ def test_load_rgb_applies_exif_orientation(tmp_path: Path) -> None:
     assert pp.load_rgb(path).shape == (4, 2, 3)
 
 
+@pytest.mark.parametrize("orientation", [None, 1, 2, 3, 4, 5, 6, 7, 8])
+def test_upright_size_matches_load_rgb(orientation: int | None) -> None:
+    exif = Image.Exif()
+    if orientation is not None:
+        exif[0x0112] = orientation
+    buf = io.BytesIO()
+    Image.new("RGB", (6, 3)).save(buf, format="JPEG", exif=exif)
+    data = buf.getvalue()
+
+    with Image.open(io.BytesIO(data)) as img:
+        width, height = pp.upright_size(img)
+    assert pp.load_rgb(data).shape[:2] == (height, width)
+
+
 def test_geometry_for_zerowaste_frames() -> None:
     geometry = pp.compute_geometry(1920, 1080, CONFIG)
 

@@ -1,8 +1,11 @@
 import base64
 import io
 import json
+import struct
+import zlib
 
 import numpy as np
+import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 
@@ -85,6 +88,26 @@ def test_oversized_upload_is_rejected(settings: Settings, worker: Worker) -> Non
     with TestClient(create_app(small)) as c:
         r = upload(c, png_bytes())
     assert (r.status_code, error_code(r)) == (413, "file_too_large")
+
+
+def header_only_png(width: int, height: int) -> bytes:
+    """A PNG whose header claims ``width x height`` but carries almost no data."""
+
+    def chunk(kind: bytes, body: bytes) -> bytes:
+        crc = struct.pack(">I", zlib.crc32(kind + body))
+        return struct.pack(">I", len(body)) + kind + body + crc
+
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    idat = zlib.compress(b"\x00" * 64)
+    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", idat) + chunk(b"IEND", b"")
+
+
+@pytest.mark.parametrize("size", [(8000, 6000), (20000, 20000)])
+def test_pixel_limit_rejects_before_decoding(client: TestClient, size: tuple[int, int]) -> None:
+    # 48 MP is over our 40 MP limit; 400 MP is also over Pillow's own bomb limit.
+    r = upload(client, header_only_png(*size))
+
+    assert (r.status_code, error_code(r)) == (413, "image_too_large")
 
 
 def test_idempotency_key(client: TestClient) -> None:
@@ -184,6 +207,32 @@ def test_feedback_rules_and_corrected_masks(client: TestClient, worker: Worker) 
         f"/v1/audits/{audit_id}/feedback", json={"image_id": "img_nope", "decision": "confirmed"}
     )
     assert error_code(unknown) == "image_not_found"
+
+
+def test_exif_rotated_upload_uses_the_upright_grid(client: TestClient, worker: Worker) -> None:
+    img = Image.fromarray(np.random.default_rng(0).integers(40, 216, (64, 96, 3), dtype=np.uint8))
+    exif = Image.Exif()
+    exif[0x0112] = 6  # stored 96x64 landscape, displayed 64x96 portrait
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", exif=exif)
+    audit_id = upload(client, buf.getvalue()).json()["audit_id"]
+    worker.run_once()
+    image_id = client.get(f"/v1/audits/{audit_id}").json()["images"][0]["image_id"]
+    info = client.get(f"/v1/audits/{audit_id}/images/{image_id}").json()
+
+    mask = Image.open(io.BytesIO(client.get(info["mask_url"]).content))
+    assert (info["width"], info["height"]) == mask.size == (64, 96)
+    correction = io.BytesIO()
+    Image.fromarray(np.zeros((96, 64), dtype=np.uint8)).save(correction, format="PNG")
+    ok = client.post(
+        f"/v1/audits/{audit_id}/feedback",
+        json={
+            "image_id": image_id,
+            "decision": "corrected",
+            "corrected_mask_png_base64": base64.b64encode(correction.getvalue()).decode(),
+        },
+    )
+    assert ok.status_code == 201
 
 
 def test_unknown_resources_are_404(client: TestClient) -> None:

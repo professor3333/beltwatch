@@ -37,7 +37,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 from beltwatch import __version__
 from beltwatch.api.settings import Settings
 from beltwatch.inference.postprocessing import rasterize_region
-from beltwatch.inference.preprocessing import PREPROCESSING_VERSION
+from beltwatch.inference.preprocessing import PREPROCESSING_VERSION, upright_size
 from beltwatch.jobs.store import IdempotencyConflict, JobStore, NewImage, new_id
 from beltwatch.labels import CLASS_NAMES, TARGET_CLASS_IDS
 from beltwatch.release.bundle import Release, ReleaseError, load_active_release
@@ -95,7 +95,12 @@ class FeedbackIn(BaseModel):
 
 
 def _decode_upload(data: bytes, filename: str, settings: Settings) -> tuple[str, str, int, int]:
-    """Validate the actual image content; returns (content_type, extension, width, height)."""
+    """Validate the actual image content; returns (content_type, extension, width, height).
+
+    Width and height are the upright size (after EXIF orientation), the grid the
+    worker predicts on and that corrected masks must match. Size limits are
+    checked on the header before any pixels are decoded.
+    """
     try:
         with Image.open(io.BytesIO(data)) as img:
             fmt = img.format or ""
@@ -116,9 +121,17 @@ def _decode_upload(data: bytes, filename: str, settings: Settings) -> tuple[str,
             if min(width, height) < 32:
                 raise ApiError(422, "image_too_small", f"{filename}: {width}x{height} is too small")
             img.load()
+            width, height = upright_size(img)
     except ApiError:
         raise
-    except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError) as exc:
+    except Image.DecompressionBombError as exc:
+        raise ApiError(
+            413,
+            "image_too_large",
+            f"{filename}: exceeds the pixel limit ({exc})",
+            max_pixels=settings.max_image_pixels,
+        ) from exc
+    except (UnidentifiedImageError, OSError, ValueError) as exc:
         raise ApiError(422, "invalid_image", f"{filename}: cannot decode image ({exc})") from exc
     content_type, ext = ALLOWED_FORMATS[fmt]
     return content_type, ext, width, height
