@@ -1,10 +1,13 @@
+import io
 import shutil
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pytest
 import torch
 from fastapi.testclient import TestClient
+from PIL import Image
 
 from beltwatch.api.settings import Settings
 from beltwatch.inference.neural import save_inference_checkpoint
@@ -99,7 +102,7 @@ def test_corrupt_upload_fails_only_that_image(
     assert failed["status"] == "failed" and failed["error"].startswith("invalid_image")
 
 
-def test_neural_release_end_to_end(tmp_path: Path) -> None:
+def _neural_settings(tmp_path: Path) -> Settings:
     torch.manual_seed(0)
     model_config = ModelConfig(pretrained=False)
     ckpt = tmp_path / "best.pt"
@@ -109,18 +112,47 @@ def test_neural_release_end_to_end(tmp_path: Path) -> None:
     releases = tmp_path / "releases"
     build_release(releases, version="unet-test", kind="unet", model_path=ckpt, review_policy=POLICY)
     activate(releases, "unet-test", "test")
-    settings = Settings(data_dir=tmp_path / "var", releases_dir=releases)
+    return Settings(data_dir=tmp_path / "var", releases_dir=releases)
+
+
+def _run_one(settings: Settings, data: bytes) -> dict[str, Any]:
     store = JobStore(settings.database_path)
     worker = Worker(settings, store, worker_id="w")
     store.heartbeat("w", None)
     from beltwatch.api.app import create_app
 
     with TestClient(create_app(settings)) as client:
-        audit_id = upload(client, png_bytes(7)).json()["audit_id"]
+        audit_id = upload(client, data).json()["audit_id"]
         worker.run_once()
         image = client.get(f"/v1/audits/{audit_id}").json()["images"][0]
-        detail = client.get(image["detail_url"]).json()
+        detail: dict[str, Any] = client.get(image["detail_url"]).json()
+        detail["mask_size"] = Image.open(io.BytesIO(client.get(detail["mask_url"]).content)).size
+    return detail
+
+
+def test_neural_release_end_to_end(tmp_path: Path) -> None:
+    detail = _run_one(_neural_settings(tmp_path), png_bytes(7))
 
     assert detail["status"] == "complete" and detail["model_version"] == "unet-test"
     assert 0.0 <= detail["uncertain_pixel_fraction"] <= 1.0
     assert 0.0 <= detail["total_target_coverage"] <= 1.0
+
+
+@pytest.mark.parametrize("size", [(2000, 32), (32, 2000)])
+def test_extreme_aspect_ratio_completes_at_original_size(
+    tmp_path: Path, size: tuple[int, int]
+) -> None:
+    detail = _run_one(_neural_settings(tmp_path), png_bytes(3, size=size))
+
+    assert detail["status"] == "complete"
+    assert detail["mask_size"] == size == (detail["width"], detail["height"])
+
+
+def test_blank_image_is_segmented_but_routed_to_retake(tmp_path: Path) -> None:
+    buf = io.BytesIO()
+    Image.new("RGB", (96, 64), (0, 0, 0)).save(buf, format="PNG")
+
+    detail = _run_one(_neural_settings(tmp_path), buf.getvalue())
+
+    assert detail["status"] == "complete" and detail["route"] == "retake_image"
+    assert {"blurred", "underexposed"} <= set(detail["review_reasons"])

@@ -50,6 +50,22 @@ class Geometry:
     padded_size: tuple[int, int]
 
 
+_EXIF_ORIENTATION = 0x0112
+_TRANSPOSED_ORIENTATIONS = frozenset({5, 6, 7, 8})
+
+
+def upright_size(img: Image.Image) -> tuple[int, int]:
+    """``(width, height)`` after EXIF orientation, i.e. the size :func:`load_rgb` returns.
+
+    Pillow may decode the whole image to find a PNG's EXIF chunk, so check size
+    limits on ``img.size`` (orientation does not change the pixel count) first.
+    """
+    width, height = img.size
+    if img.getexif().get(_EXIF_ORIENTATION) in _TRANSPOSED_ORIENTATIONS:
+        return height, width
+    return width, height
+
+
 def load_rgb(source: Path | bytes) -> npt.NDArray[np.uint8]:
     """Decode an image as ``HxWx3`` RGB uint8, applying EXIF orientation."""
     fh = io.BytesIO(source) if isinstance(source, bytes) else source.open("rb")
