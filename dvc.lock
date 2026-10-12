@@ -1,0 +1,154 @@
+schema: '2.0'
+stages:
+  download:
+    cmd: python -m beltwatch.data.download --config configs/data.yaml
+    deps:
+    - path: src/beltwatch/data/config.py
+      hash: md5
+      md5: d2786c7e23d7b6a5fdc3876ffdb5f749
+      size: 1736
+    - path: src/beltwatch/data/download.py
+      hash: md5
+      md5: 8ffbc722c962282976d55021030e35b7
+      size: 8647
+    params:
+      configs/data.yaml:
+        source:
+          name: zerowaste-f
+          zenodo_record: 6412647
+          version: 1.2.1
+          doi: 10.5281/zenodo.6412647
+          filename: zerowaste-f-final.zip
+          url: 
+            https://zenodo.org/api/records/6412647/files/zerowaste-f-final.zip/content
+          size_bytes: 7518242799
+          md5: e26e31a58080bca6782dca0e56074c5d
+    outs:
+    - path: data/manifests/zerowaste-f-download.json
+      hash: md5
+      md5: 6fa2abc228aa0b680d4aef610b3bd4ec
+      size: 913
+    - path: data/raw/zerowaste-f
+      hash: md5
+      md5: d8517f0801d42bf718c6971d08d3bcb8.dir
+      size: 7533613802
+      nfiles: 9009
+  validate:
+    cmd: python -m beltwatch.data.validate --config configs/data.yaml
+    deps:
+    - path: data/raw/zerowaste-f
+      hash: md5
+      md5: d8517f0801d42bf718c6971d08d3bcb8.dir
+      size: 7533613802
+      nfiles: 9009
+    - path: src/beltwatch/data/config.py
+      hash: md5
+      md5: d2786c7e23d7b6a5fdc3876ffdb5f749
+      size: 1736
+    - path: src/beltwatch/data/validate.py
+      hash: md5
+      md5: 9c00873124bba35ce132b28153350c91
+      size: 19091
+    - path: src/beltwatch/labels.py
+      hash: md5
+      md5: 404ef8272b43eab542d5e365a5ea6236
+      size: 4058
+    params:
+      configs/data.yaml:
+        layout:
+          root_subdir: splits_final_deblurred
+          splits:
+          - train
+          - val
+          - test
+          images_subdir: data
+          masks_subdir: sem_seg
+          annotations_file: labels.json
+    outs:
+    - path: data/manifests/zerowaste-f-images.csv
+      hash: md5
+      md5: 9c2127fa0d06250d9c5743fe875a1198
+      size: 1511287
+    - path: data/manifests/zerowaste-f-quarantine.csv
+      hash: md5
+      md5: 5061036a2b23594425053c7009d9fca5
+      size: 32
+    - path: data/manifests/zerowaste-f-validation.json
+      hash: md5
+      md5: dd0833ef35bc01bc8fac1d73aceec70f
+      size: 2036
+  duplicates:
+    cmd: python -m beltwatch.data.duplicates --config configs/data.yaml
+    deps:
+    - path: data/manifests/zerowaste-f-images.csv
+      hash: md5
+      md5: 9c2127fa0d06250d9c5743fe875a1198
+      size: 1511287
+    - path: data/raw/zerowaste-f
+      hash: md5
+      md5: d8517f0801d42bf718c6971d08d3bcb8.dir
+      size: 7533613802
+      nfiles: 9009
+    - path: src/beltwatch/data/config.py
+      hash: md5
+      md5: d2786c7e23d7b6a5fdc3876ffdb5f749
+      size: 1736
+    - path: src/beltwatch/data/duplicates.py
+      hash: md5
+      md5: bae0d84b69bb52f46fdd2d4ffa32f142
+      size: 10584
+    params:
+      configs/data.yaml:
+        duplicates:
+          hash_size: 8
+          phash_max_hamming: 6
+    outs:
+    - path: data/manifests/zerowaste-f-duplicates.csv
+      hash: md5
+      md5: 2370cee3ea07d7060bee36710aecc7c7
+      size: 3313
+    - path: data/manifests/zerowaste-f-duplicates.json
+      hash: md5
+      md5: d814c63e95240a76350df0db6ad610dd
+      size: 768
+    - path: data/manifests/zerowaste-f-hashes.csv
+      hash: md5
+      md5: 6c39a0d6fb9950b1ffef076dbd4fe7d8
+      size: 275071
+  splits:
+    cmd: python -m beltwatch.data.splits --config configs/data.yaml
+    deps:
+    - path: data/manifests/zerowaste-f-duplicates.csv
+      hash: md5
+      md5: 2370cee3ea07d7060bee36710aecc7c7
+      size: 3313
+    - path: data/manifests/zerowaste-f-images.csv
+      hash: md5
+      md5: 9c2127fa0d06250d9c5743fe875a1198
+      size: 1511287
+    - path: src/beltwatch/data/config.py
+      hash: md5
+      md5: d2786c7e23d7b6a5fdc3876ffdb5f749
+      size: 1736
+    - path: src/beltwatch/data/splits.py
+      hash: md5
+      md5: d71d5243bdfa5dd12c34e35d7f3a2fa8
+      size: 9343
+    params:
+      configs/data.yaml:
+        splits:
+          policy: official-repaired
+          calibration_from_val_sequences:
+          - '02'
+          - '10'
+          train_buffer_frames: 500
+          exclude_train_duplicates_of_eval: true
+    outs:
+    - path: data/splits/zerowaste-f-splits.csv
+      hash: md5
+      md5: 5a0d9ac085a3961fcf7e1f6d48e3a39d
+      size: 221095
+    - path: data/splits/zerowaste-f-splits.json
+      hash: md5
+      md5: 3b45a7ecb49e66eb10a3ec7b88d4cec5
+      size: 1282

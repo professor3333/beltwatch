@@ -1,0 +1,115 @@
+{
+  "source": {
+    "name": "zerowaste-f",
+    "version": "1.2.1",
+    "md5": "e26e31a58080bca6782dca0e56074c5d"
+  },
+  "source_categories": {
+    "1": "rigid_plastic",
+    "2": "cardboard",
+    "3": "metal",
+    "4": "soft_plastic"
+  },
+  "source_to_beltwatch": {
+    "0": 0,
+    "1": 3,
+    "2": 1,
+    "3": 4,
+    "4": 2
+  },
+  "splits": {
+    "train": {
+      "images_in_annotations": 3002,
+      "image_files": 3002,
+      "annotations": 18002,
+      "valid": 3002,
+      "quarantined": 0
+    },
+    "val": {
+      "images_in_annotations": 572,
+      "image_files": 572,
+      "annotations": 3687,
+      "valid": 572,
+      "quarantined": 0
+    },
+    "test": {
+      "images_in_annotations": 929,
+      "image_files": 929,
+      "annotations": 5077,
+      "valid": 929,
+      "quarantined": 0
+    }
+  },
+  "total_valid": 4503,
+  "total_quarantined": 0,
+  "error_counts": {},
+  "warning_counts": {
+    "category_missing_from_mask": 3,
+    "no_annotations": 86,
+    "zero_area_polygon": 73
+  },
+  "class_pixel_fraction": {
+    "background": 0.83078,
+    "cardboard": 0.10753,
+    "soft_plastic": 0.053497,
+    "rigid_plastic": 0.007213,
+    "metal": 0.000981
+  },
+  "images_with_class": {
+    "background": 4503,
+    "cardboard": 4208,
+    "soft_plastic": 3241,
+    "rigid_plastic": 1357,
+    "metal": 346
+  },
+  "sequences_by_split": {
+    "01": {
+      "test": 262,
+      "train": 38,
+      "val": 157
+    },
+    "02": {
+      "train": 101,
+      "val": 100
+    },
+    "03": {
+      "test": 251,
+      "train": 201,
+      "val": 71
+    },
+    "04": {
+      "train": 352,
+      "val": 101
+    },
+    "05": {
+      "test": 100,
+      "train": 352
+    },
+    "06": {
+      "train": 351
+    },
+    "07": {
+      "train": 351
+    },
+    "08": {
+      "test": 215
+    },
+    "09": {
+      "test": 101,
+      "train": 453
+    },
+    "10": {
+      "train": 502,
+      "val": 100
+    },
+    "11": {
+      "train": 100
+    },
+    "12": {
+      "train": 201,
+      "val": 43
+    }
+  },
+  "beltwatch_version": "0.1.0",
+  "orphan_masks": []
+}

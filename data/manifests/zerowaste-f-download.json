@@ -1,0 +1,28 @@
+{
+  "source": {
+    "name": "zerowaste-f",
+    "zenodo_record": 6412647,
+    "version": "1.2.1",
+    "doi": "10.5281/zenodo.6412647",
+    "filename": "zerowaste-f-final.zip",
+    "url": "https://zenodo.org/api/records/6412647/files/zerowaste-f-final.zip/content",
+    "size_bytes": 7518242799,
+    "md5": "e26e31a58080bca6782dca0e56074c5d"
+  },
+  "archive_verified": {
+    "size_bytes": 7518242799,
+    "md5": "e26e31a58080bca6782dca0e56074c5d"
+  },
+  "extracted_dir": "data/raw/zerowaste-f",
+  "image_counts_by_directory": {
+    "splits_final_deblurred/test/data": 929,
+    "splits_final_deblurred/test/sem_seg": 929,
+    "splits_final_deblurred/train/data": 3002,
+    "splits_final_deblurred/train/sem_seg": 3002,
+    "splits_final_deblurred/val/data": 572,
+    "splits_final_deblurred/val/sem_seg": 572
+  },
+  "total_images": 9006,
+  "created_at": "2026-10-12T11:58:31+00:00",
+  "beltwatch_version": "0.1.0"
+}

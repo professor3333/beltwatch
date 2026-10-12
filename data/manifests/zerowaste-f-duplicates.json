@@ -1,0 +1,44 @@
+{
+  "images": 4503,
+  "phash_max_hamming": 6,
+  "exact_duplicate_groups": [],
+  "near_duplicate_pairs": 41,
+  "near_duplicate_pairs_by_split_pair": {
+    "test|test": 36,
+    "test|train": 1,
+    "test|val": 2,
+    "train|train": 2
+  },
+  "cross_split_pairs": 3,
+  "cross_split_min_frame_gap": {
+    "01": {
+      "test|train": 380,
+      "test|val": 0,
+      "train|val": 785
+    },
+    "02": {
+      "train|val": 9
+    },
+    "03": {
+      "test|train": 22000,
+      "test|val": 0,
+      "train|val": 47000
+    },
+    "04": {
+      "train|val": 1999
+    },
+    "05": {
+      "test|train": 4009
+    },
+    "09": {
+      "test|train": 0
+    },
+    "10": {
+      "train|val": 4009
+    },
+    "12": {
+      "train|val": 20000
+    }
+  },
+  "beltwatch_version": "0.1.0"
+}
