@@ -86,6 +86,16 @@ from `latest.pt`. The 300-step timing run writes to its own directory, so
 running it again does not overwrite the full run's checkpoint. Each resume
 opens a new MLflow run. The interrupted run stays marked as running.
 
+On Kaggle, `notebooks/train_kaggle.ipynb` trains one model per run (set
+`MODEL` to `unet` or `segformer`), so each run takes about 5 to 6 hours and
+fits Kaggle's 12-hour session limit. Choose the GPU T4 x2 accelerator and turn
+Internet on, then use **Save Version → Save & Run All (Commit)**: the run
+continues without an open browser tab. The dataset is built on local disk, and
+`/kaggle/working/beltwatch-runs` (checkpoints, reports, `mlflow.db`, and the
+dataset-version files) is saved as the version's output. To resume a run that
+stopped early, attach that version's output with **Add Input** and commit
+again: the notebook copies it back and training resumes from `latest.pt`.
+
 ## 5. SegFormer-B0 (challenger)
 
 ```bash

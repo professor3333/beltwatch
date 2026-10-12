@@ -238,7 +238,7 @@ uv run python scripts/benchmark.py --release model_releases/<v> --threads 4 --ou
 ```
 
 Full training needs an NVIDIA GPU. See the [training runbook](docs/training.md)
-and the [Colab notebook](notebooks/train_colab.ipynb).
+and the [Colab](notebooks/train_colab.ipynb) or [Kaggle](notebooks/train_kaggle.ipynb) notebook.
 
 ### Running the audit service
 
@@ -312,7 +312,7 @@ src/beltwatch/baselines/ All-background sanity check and the random-forest basel
 src/beltwatch/models/    U-Net (ResNet-18 encoder) and SegFormer-B0 (MiT-B0 encoder)
 src/beltwatch/training/  Training configuration, losses, and the tracked, resumable training loop
 configs/unet.yaml, configs/segformer_b0.yaml   Matched training configurations
-notebooks/               Colab notebook for GPU training
+notebooks/               Colab and Kaggle notebooks for GPU training
 scripts/evaluate.py      Evaluate a model on a split (the test split requires a declared release)
 scripts/train.py         Train a model from a YAML config
 scripts/error_report.py  Error-analysis report (val only)
