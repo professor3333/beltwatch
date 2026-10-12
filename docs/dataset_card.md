@@ -41,7 +41,7 @@ not redistribute any dataset files.
 | Labels | Polygon segmentation: cardboard, soft plastic, rigid plastic, metal |
 | Background | Everything else, including paper, the belt, and other objects. **Not** a "clean paper" label |
 | Images listed on the project website | 4,503 |
-| Images in the release archive | 4,503: train 3,002 · val 572 · test 929 (counted from the archive's zip index; confirmed by `validate` after a full download) |
+| Images in the release archive | 4,503: train 3,002 · val 572 · test 929 (counted from the zip index, then confirmed by `validate` on the full download on 2026-10-12; 0 quarantined) |
 | Archive layout | `splits_final_deblurred/{train,val,test}/{data,sem_seg,labels.json}` |
 | Image format | 1920 × 1080 RGB PNG |
 | Annotations | COCO `labels.json` per split, polygon segmentations (`iscrowd: 0`) |
@@ -68,6 +68,21 @@ git-tracked files to `data/manifests/`:
 Polygon problems (degenerate, zero-area, or out-of-bounds polygons) and
 disagreements between a mask and its annotations are recorded as warnings
 and do not exclude the image.
+
+Measured on the full download (2026-10-12, `zerowaste-f-validation.json`):
+4,503 valid images, 0 quarantined. Warnings: 86 images without annotations,
+73 zero-area polygons, and 3 categories annotated but absent from the mask.
+
+| Class | Share of all pixels | Images containing it |
+|---|---|---|
+| background | 83.08% | 4,503 |
+| cardboard | 10.75% | 4,208 |
+| soft plastic | 5.35% | 3,241 |
+| rigid plastic | 0.72% | 1,357 |
+| metal | 0.10% | 346 |
+
+Rigid plastic and metal together cover under 1% of pixels, so they are the
+hardest classes to learn and the noisiest to evaluate.
 
 ## Splits and leakage findings
 
@@ -124,8 +139,19 @@ Threshold calibration on a 22-image real sample (train and val):
 The default threshold separates true near-duplicates from neighbouring
 frames. Neighbouring frames are still strongly correlated without being
 hash-level duplicates, so perceptual hashing alone cannot establish
-independence. Sequence-level grouping is required. Full-dataset counts are
-*pending* the download.
+independence. Sequence-level grouping is required.
+
+Full-dataset result (2026-10-12, `zerowaste-f-duplicates.json`): no
+byte-identical groups and 41 near-duplicate pairs at pHash distance ≤ 6.
+Thirty-eight pairs fall within one split (36 test–test, 2 train–train, the
+`-2` files). Three cross splits, each at a frame gap of 0, meaning the release
+holds the same frame number in two splits:
+
+| Pair | Handled by |
+|---|---|
+| train `09_frame_003000` – test `09_frame_003000` | train copy excluded |
+| val `01_frame_049000` – test `01_frame_049000` | val copy excluded |
+| val `03_frame_049000` – test `03_frame_049000` | val copy excluded |
 
 ### Split policy: `official-repaired`
 
@@ -148,17 +174,23 @@ Decided on 2026-10-05, before any model was trained, and configured in
 6. **Unseen-recording slice:** test images whose sequence has no remaining
    train images are marked `unseen_sequence` and reported separately.
 
-Projected sizes, computed from the archive's file names before the
-duplicate-based exclusions:
+Measured sizes on the full dataset (2026-10-12), split manifest ID
+`c82851178745739c24daa50338ff5f65cb38f8a172420ec5d39a5fdd28d73ead`:
 
 | Split | Images | Sequences |
 |---|---|---|
 | train | 2,888 | 01–07, 09–12 |
-| val | 372 | 01, 03, 04, 12 |
+| val | 370 | 01, 03, 04, 12 |
 | calibration | 200 | 02, 10 |
 | test (locked) | 929 | 01, 03, 05, 08, 09 |
-| excluded (buffer) | 114 | 01 (13), 02 (50), 09 (51) |
+| excluded | 116 | 01 (14), 02 (50), 03 (1), 09 (51) |
 | unseen-recording test slice | 215 | 08 |
+
+Exclusions: 113 train frames within the 500-frame buffer, 1 train duplicate of
+a test frame, and 2 val duplicates of test frames. Val is 2 images smaller
+than the 372 projected from file names before the audit because of the two
+val–test duplicates above. The same manifest ID was produced independently on
+Colab and on Kaggle.
 
 **What results on these splits support:** performance on held-out time
 windows of the same recordings, plus a single-sequence unseen-recording slice.
@@ -171,7 +203,9 @@ split manifest ID from `data/splits/zerowaste-f-splits.json`.
 ## Known limitations
 
 - Many frames come from related video footage, and the released splits share
-  sequences (see above). A duplicate and near-duplicate audit is *pending*.
+  sequences (see above). The duplicate audit removed the three cross-split
+  near-duplicates it found, but neighbouring frames outside the buffer remain
+  correlated, so independence between splits is not guaranteed.
 - The images come from a single facility under a narrow range of operating
   conditions.
 - Rare materials have relatively few examples.

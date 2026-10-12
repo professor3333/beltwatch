@@ -1,0 +1,71 @@
+{
+  "split_manifest_id": "c82851178745739c24daa50338ff5f65cb38f8a172420ec5d39a5fdd28d73ead",
+  "policy": {
+    "policy": "official-repaired",
+    "calibration_from_val_sequences": [
+      "02",
+      "10"
+    ],
+    "train_buffer_frames": 500,
+    "exclude_train_duplicates_of_eval": true
+  },
+  "counts": {
+    "train": 2888,
+    "val": 370,
+    "calibration": 200,
+    "test": 929,
+    "excluded": 116
+  },
+  "excluded_by_reason": {
+    "duplicate_of_eval": 1,
+    "duplicate_of_test": 2,
+    "within_buffer_of_eval": 113
+  },
+  "excluded_by_official_split": {
+    "train": 114,
+    "val": 2
+  },
+  "sequences_by_split": {
+    "train": {
+      "01": 25,
+      "02": 51,
+      "03": 201,
+      "04": 352,
+      "05": 352,
+      "06": 351,
+      "07": 351,
+      "09": 402,
+      "10": 502,
+      "11": 100,
+      "12": 201
+    },
+    "val": {
+      "01": 156,
+      "03": 70,
+      "04": 101,
+      "12": 43
+    },
+    "calibration": {
+      "02": 100,
+      "10": 100
+    },
+    "test": {
+      "01": 262,
+      "03": 251,
+      "05": 100,
+      "08": 215,
+      "09": 101
+    },
+    "excluded": {
+      "01": 14,
+      "02": 50,
+      "03": 1,
+      "09": 51
+    }
+  },
+  "unseen_sequence_test_images": 215,
+  "unseen_sequences": [
+    "08"
+  ],
+  "beltwatch_version": "0.1.0"
+}
