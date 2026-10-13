@@ -320,7 +320,7 @@ configs/random_forest_tuning.yaml   Declared random-forest tuning grid
 src/beltwatch/models/    U-Net (ResNet-18 encoder) and SegFormer-B0 (MiT-B0 encoder)
 src/beltwatch/training/  Training configuration, losses, and the tracked, resumable training loop
 configs/unet.yaml, configs/segformer_b0.yaml   Matched training configurations
-notebooks/               Colab and Kaggle notebooks for GPU training
+notebooks/               Colab and Kaggle notebooks: GPU training, CPU evaluation runs
 scripts/evaluate.py      Evaluate a model on a split (the test split requires a declared release)
 scripts/compare.py       Paired-bootstrap difference between two reports on the same images
 scripts/train.py         Train a model from a YAML config

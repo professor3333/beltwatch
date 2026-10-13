@@ -123,6 +123,21 @@ does the following on val:
 4. Tunes the random forest.
 5. Compares each neural model with the tuned forest.
 
+`MODEL = "analysis"` also runs on a CPU session and uses the same attached
+dataset. For each checkpoint it does the following:
+
+1. Fits a temperature on the calibration split, once on all pixels and once
+   on foreground pixels (`--fit-scope all|foreground`).
+2. Re-scores val with each temperature (`reports/calibrated-<scope>/`).
+3. Writes the error-analysis report on val (`error-reports/<run>/`).
+4. Benchmarks the model with 4 threads on 20 val frames (`benchmarks/<run>.json`).
+   It uses an unactivated bundle built only for this purpose, not a release
+   candidate.
+
+Each benchmark records the session's hardware. Kaggle's CPU session has 4
+cores but more than 8 GB of RAM, so memory is measured as peak RSS, not
+enforced. The error reports contain ZeroWaste frames, so keep them out of git.
+
 After `dvc repro`, the notebook checks the rebuilt dataset-version files
 against the commit. If only the download time in
 `zerowaste-f-download.json` differs (and the `dvc.lock` hash that follows
