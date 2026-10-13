@@ -273,6 +273,36 @@ def load_confusions(path: Path) -> SavedConfusions:
         )
 
 
+def unseen_sequence_ids(splits_csv: Path) -> set[str]:
+    with splits_csv.open(newline="", encoding="utf-8") as fh:
+        return {r["image_id"] for r in csv.DictReader(fh) if r["unseen_sequence"] == "True"}
+
+
+def save_report(
+    results: Sequence[ImageResult],
+    out: Path,
+    *,
+    model: str,
+    split: str,
+    split_manifest_id: str,
+    slices: Mapping[str, set[str]] | None = None,
+    declared_release: str | None = None,
+    limited_to: int | None = None,
+    temperature: float = 1.0,
+) -> dict[str, Any]:
+    """Build the report and write ``report.json``, ``per_image.csv`` and ``confusions.npz``."""
+    report = build_report(results, model=model, split=split, slices=slices)
+    report["split_manifest_id"] = split_manifest_id
+    report["declared_release"] = declared_release
+    report["limited_to"] = limited_to
+    report["temperature"] = temperature
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "report.json").write_text(json.dumps(report, indent=2) + "\n")
+    write_per_image(results, out / "per_image.csv")
+    write_confusions(results, out / "confusions.npz")
+    return report
+
+
 def load_predictor(kind: str, model_dir: Path | None, temperature: float = 1.0) -> Predictor:
     if kind == "all-background":
         return AllBackground()
@@ -316,26 +346,23 @@ def main(argv: list[str] | None = None) -> int:
     )
     if args.limit:
         samples = samples[: args.limit]
-    with splits_csv.open(newline="", encoding="utf-8") as fh:
-        unseen = {r["image_id"] for r in csv.DictReader(fh) if r["unseen_sequence"] == "True"}
     remap = load_source_remap(data.paths.manifests_dir / f"{name}-validation.json")
     predictor = load_predictor(args.model, args.model_dir, args.temperature)
 
     results = evaluate_images(predictor, samples, remap)
-    report = build_report(
-        results, model=predictor.name, split=args.split, slices={"unseen_sequence": unseen}
-    )
     splits_summary = json.loads((data.paths.splits_dir / f"{name}-splits.json").read_text())
-    report["split_manifest_id"] = splits_summary["split_manifest_id"]
-    report["declared_release"] = args.declared_release
-    report["limited_to"] = args.limit
-    report["temperature"] = args.temperature
-
     out = args.out_dir / f"{predictor.name}-{args.split}"
-    out.mkdir(parents=True, exist_ok=True)
-    (out / "report.json").write_text(json.dumps(report, indent=2) + "\n")
-    write_per_image(results, out / "per_image.csv")
-    write_confusions(results, out / "confusions.npz")
+    report = save_report(
+        results,
+        out,
+        model=predictor.name,
+        split=args.split,
+        split_manifest_id=splits_summary["split_manifest_id"],
+        slices={"unseen_sequence": unseen_sequence_ids(splits_csv)},
+        declared_release=args.declared_release,
+        limited_to=args.limit,
+        temperature=args.temperature,
+    )
     seg = report["segmentation"]
     log.info(
         "%s on %s (%d images): foreground macro IoU %s, coverage MAE %.2f pp -> %s",

@@ -208,6 +208,7 @@ uv run mypy                   # strict type checking of src/
 uv run python -m beltwatch.baselines.random_forest --out models/random-forest
 uv run python scripts/evaluate.py --model all-background --split val
 uv run python scripts/evaluate.py --model random-forest --model-dir models/random-forest --split val
+uv run python -m beltwatch.baselines.tune_random_forest   # val-only grid in configs/random_forest_tuning.yaml
 ```
 
 Reports go to `reports/<model>-<split>/` (`report.json`, `per_image.csv`, and
@@ -314,12 +315,14 @@ src/beltwatch/data/      Data configuration, verified downloader, validation, du
 src/beltwatch/inference/ Shared preprocessing and coverage computation used by training and serving
 src/beltwatch/evaluation/ Segmentation metrics, coverage error, review workload, group bootstrap,
                          and the evaluation runner used for every model
-src/beltwatch/baselines/ All-background sanity check and the random-forest baseline
+src/beltwatch/baselines/ All-background sanity check, the random-forest baseline, and its val-only tuner
+configs/random_forest_tuning.yaml   Declared random-forest tuning grid
 src/beltwatch/models/    U-Net (ResNet-18 encoder) and SegFormer-B0 (MiT-B0 encoder)
 src/beltwatch/training/  Training configuration, losses, and the tracked, resumable training loop
 configs/unet.yaml, configs/segformer_b0.yaml   Matched training configurations
 notebooks/               Colab and Kaggle notebooks for GPU training
 scripts/evaluate.py      Evaluate a model on a split (the test split requires a declared release)
+scripts/compare.py       Paired-bootstrap difference between two reports on the same images
 scripts/train.py         Train a model from a YAML config
 scripts/error_report.py  Error-analysis report (val only)
 scripts/benchmark.py     CPU latency, throughput, and memory of a release
