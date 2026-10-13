@@ -1,12 +1,15 @@
+import json
 from pathlib import Path
 
 import numpy as np
 import pytest
 
+from beltwatch.baselines import random_forest
 from beltwatch.baselines.features import FeatureConfig, pixel_features
 from beltwatch.baselines.random_forest import (
     RandomForestConfig,
     RandomForestSegmenter,
+    TrainingSet,
     sample_pixels,
 )
 from beltwatch.baselines.trivial import AllBackground
@@ -88,3 +91,66 @@ def test_random_forest_rejects_ignore_labels() -> None:
         RandomForestSegmenter(SMALL).fit(
             np.zeros((2, 3), np.float32), np.array([0, IGNORE_INDEX], np.uint8)
         )
+
+
+def fitted_forest() -> RandomForestSegmenter:
+    xs, ys = zip(
+        *(sample_pixels(*scene(s), SMALL, np.random.default_rng(s)) for s in range(6)), strict=True
+    )
+    y = np.concatenate(ys)
+    # Pretend background is far more common in the training set than in the sample.
+    totals = np.bincount(y, minlength=NUM_CLASSES) * np.array([50, 1, 1, 1, 1])
+    data_set = TrainingSet(np.concatenate(xs), y, totals)
+    return RandomForestSegmenter(SMALL, prior_ratio=data_set.prior_ratio()).fit(data_set.x, y)
+
+
+def test_prior_ratio_is_training_share_over_sampled_share() -> None:
+    y = np.array([0, 0, 1, 1], dtype=np.uint8)  # sampled: half background, half cardboard
+    totals = np.array([90, 10, 0, 0, 0])  # training set: 90% background
+
+    ratio = TrainingSet(np.zeros((4, 1), np.float32), y, totals).prior_ratio()
+
+    assert ratio == pytest.approx([1.8, 0.2, 1.0, 1.0, 1.0])  # unsampled classes stay at 1
+
+
+def test_prior_power_shifts_predictions_towards_frequent_classes(tmp_path: Path) -> None:
+    rf = fitted_forest()
+    rgb, _ = scene(99)
+
+    base = rf.predict_proba(rgb)
+    corrected = rf.with_prior_power(1.0).predict_proba(rgb)
+
+    assert np.allclose(rf.with_prior_power(0.0).predict_proba(rgb), base)
+    assert np.allclose(corrected.sum(0), 1.0, atol=1e-4)
+    assert corrected[BACKGROUND].mean() > base[BACKGROUND].mean()
+    rf.with_prior_power(1.0).save(tmp_path / "rf", {})
+    loaded = RandomForestSegmenter.load(tmp_path / "rf")
+    assert loaded.config.prior_power == 1.0
+    assert np.allclose(loaded.predict_proba(rgb), corrected)
+
+
+def test_prior_power_needs_a_recorded_ratio(tmp_path: Path) -> None:
+    rf = fitted_forest()
+    rf.save(tmp_path / "old", {})
+    meta = json.loads((tmp_path / "old/metadata.json").read_text())
+    del meta["prior_ratio"], meta["config"]["prior_power"]  # a forest saved before the option
+    (tmp_path / "old/metadata.json").write_text(json.dumps(meta))
+
+    old = RandomForestSegmenter.load(tmp_path / "old")
+
+    assert old.config.prior_power == 0.0
+    old.predict_proba(scene(1)[0])
+    with pytest.raises(ValueError, match="prior ratio"):
+        old.with_prior_power(0.5)
+
+
+def test_random_forest_cli_records_the_prior(tiny_data_config: Path, tmp_path: Path) -> None:
+    args = ["--config", str(tiny_data_config), "--out", str(tmp_path / "rf"), "--long-side", "48"]
+    small = ["--pixels-per-class", "40", "--n-estimators", "5", "--max-depth", "6"]
+
+    assert random_forest.main([*args, *small, "--prior-power", "0.5"]) == 0
+
+    meta = json.loads((tmp_path / "rf/metadata.json").read_text())
+    assert meta["config"]["prior_power"] == 0.5
+    assert len(meta["prior_ratio"]) == NUM_CLASSES
+    assert sum(meta["train_pixel_totals"]) > meta["train_pixels"]

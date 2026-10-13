@@ -1,0 +1,16 @@
+# Random-forest tuning grid (docs/training.md, section 3). Candidates are scored
+# on val only, never on test, and the one with the highest val foreground macro
+# IoU is kept (ties keep the earlier candidate). Any change to the grid must
+# bump `version`.
+version: rf-tuning-1
+
+# Each entry is fitted once on train. Unlisted fields keep RandomForestConfig's
+# defaults (long side 384, 100 trees, depth 20, 5 samples per leaf).
+forests:
+  - pixels_per_class: 200   # the untuned baseline's setting
+  - pixels_per_class: 600
+
+# Class-frequency correction applied at inference, so every forest is scored at
+# each power without refitting. 0 = as fitted on the class-stratified sample;
+# 1 = training-set class frequencies.
+prior_powers: [0.0, 0.5, 1.0]

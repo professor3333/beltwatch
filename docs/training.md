@@ -45,8 +45,24 @@ uv run python scripts/evaluate.py --model all-background --split val
 uv run python scripts/evaluate.py --model random-forest --model-dir models/random-forest --split val
 ```
 
-Tune the forest on **val** only, for example `--pixels-per-class`,
-`--max-depth`, and `--long-side`. Keep the best configuration's report.
+Tune the forest on **val** only. The declared grid is
+`configs/random_forest_tuning.yaml`:
+
+```bash
+uv run python -m beltwatch.baselines.tune_random_forest
+```
+
+The tuner fits each forest setting once on train, then scores each
+class-frequency correction (`prior_power`) on val through the same
+evaluation runner as every other model. Class-stratified pixel sampling makes
+the forest believe foreground is far more common than it is, and the
+correction scales each class's probability by `(training pixel share / sampled
+share) ** prior_power`. The tuner keeps the candidate with the highest val
+foreground macro IoU in `models/random-forest` (with `tuning.json`, the record
+of every candidate) and its report in `reports/random-forest-val`. Every
+candidate's report stays under `models/random-forest-tuning/reports`. A rerun
+reuses forests and reports that are already saved. Only the selected forest's
+weights are kept unless `--keep-all` is passed.
 
 ## 4. U-Net
 
