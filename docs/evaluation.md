@@ -103,7 +103,11 @@ coverage_c = pixels labelled c inside the inspection region
   The group definition is stated with every interval.
 - Model comparisons use a **paired** bootstrap: both models are evaluated on
   the same images and the same resampled groups, and the difference gets its
-  own interval.
+  own interval. Every report saves its per-image confusion matrices
+  (`confusions.npz`), and `scripts/compare.py <report A> <report B>` computes
+  the intervals for `A - B` on foreground macro IoU and each target class's
+  IoU, under both group definitions. It refuses reports from different
+  splits, split manifests, or image sets.
 - The test split covers only five sequences, so sequence-level intervals are
   wide. Time-block groups give narrower intervals but assume more
   independence than the data guarantees. Both are reported.

@@ -4,44 +4,11 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from PIL import Image
 
 from beltwatch.baselines.trivial import AllBackground
 from beltwatch.data.dataset import Sample
 from beltwatch.evaluation import runner
-from beltwatch.labels import CARDBOARD, NUM_CLASSES
-
-REMAP = {0: 0, 1: 3, 2: 1, 3: 4, 4: 2}  # release order -> BeltWatch IDs
-INVERSE = {v: k for k, v in REMAP.items()}
-
-
-class Oracle:
-    """Predicts the ground truth it is handed (to test the runner, not a model)."""
-
-    name = "oracle"
-
-    def __init__(self, masks: dict[int, np.ndarray]) -> None:
-        self.masks = masks
-
-    def predict_proba(self, rgb: np.ndarray) -> np.ndarray:
-        mask = self.masks[int(rgb[0, 0, 0])]
-        return np.eye(NUM_CLASSES, dtype=np.float32)[mask].transpose(2, 0, 1)
-
-
-@pytest.fixture
-def images(tmp_path: Path) -> tuple[list[Sample], dict[int, np.ndarray]]:
-    samples, masks = [], {}
-    for i in range(6):
-        internal = np.zeros((20, 30), dtype=np.uint8)
-        internal[: 2 + 3 * i, :10] = CARDBOARD  # coverage grows with i
-        source = np.vectorize(INVERSE.get)(internal).astype(np.uint8)
-        rgb = np.full((20, 30, 3), i, dtype=np.uint8)
-        Image.fromarray(rgb).save(tmp_path / f"{i}.png")
-        Image.fromarray(source).save(tmp_path / f"{i}_m.png")
-        image_id = f"val/0{i % 3 + 1}_frame_{i * 600:06d}"
-        samples.append(Sample(image_id, tmp_path / f"{i}.png", tmp_path / f"{i}_m.png"))
-        masks[i] = internal
-    return samples, masks
+from tests.models.helpers import REMAP, Oracle
 
 
 def test_oracle_scores_perfectly(images: tuple[list[Sample], dict[int, np.ndarray]]) -> None:

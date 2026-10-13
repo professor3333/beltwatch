@@ -5,7 +5,9 @@ image it restores the prediction to the original resolution and computes a
 confusion matrix and the visible coverage of the prediction and the ground truth
 (full frame as the inspection region). It then aggregates segmentation metrics,
 coverage error, the review-workload curve (ordered by predicted target
-coverage), and group-bootstrap confidence intervals.
+coverage), and group-bootstrap confidence intervals. The per-image confusion
+matrices are saved too (``confusions.npz``), so two reports on the same images
+can be compared with a paired bootstrap (:mod:`beltwatch.evaluation.compare`).
 
 Usage (via ``scripts/evaluate.py``)::
 
@@ -130,6 +132,18 @@ def _calibration(results: Sequence[ImageResult]) -> dict[str, Any]:
     return {k: summary[k] for k in ("nll", "overall", "foreground")}
 
 
+def bootstrap_groups(
+    sequence_ids: Sequence[str | None], frame_indices: Sequence[int | None]
+) -> dict[str, list[str]]:
+    """Group labels for the bootstrap, keyed as in the report's confidence intervals."""
+    return {
+        "groups_by_sequence": [str(s) for s in sequence_ids],
+        f"groups_by_{TIME_BLOCK_FRAMES}_frame_block": time_block_groups(
+            sequence_ids, frame_indices, TIME_BLOCK_FRAMES
+        ),
+    }
+
+
 def _interval(per_image: np.ndarray, groups: list[str], n_resamples: int) -> dict[str, Any]:
     interval = bootstrap_metric(per_image, groups, foreground_macro_iou, n_resamples=n_resamples)
     return {
@@ -153,10 +167,7 @@ def build_report(
     curve = workload_curve(
         [r.predicted.total_target for r in results], [is_audit_positive(r.truth) for r in results]
     )
-    sequences = [r.sequence_id for r in results]
-    frames = [r.frame_index for r in results]
-    by_sequence = [str(s) for s in sequences]
-    by_block = time_block_groups(sequences, frames, TIME_BLOCK_FRAMES)
+    groups = bootstrap_groups([r.sequence_id for r in results], [r.frame_index for r in results])
 
     slice_metrics: dict[str, Any] = {}
     for name, ids in (slices or {}).items():
@@ -182,10 +193,7 @@ def build_report(
         "review_workload": curve.summary(),
         "confidence_intervals": {
             "foreground_macro_iou": {
-                "groups_by_sequence": _interval(per_image, by_sequence, n_resamples),
-                f"groups_by_{TIME_BLOCK_FRAMES}_frame_block": _interval(
-                    per_image, by_block, n_resamples
-                ),
+                name: _interval(per_image, labels, n_resamples) for name, labels in groups.items()
             }
         },
         "calibration": _calibration(results),
@@ -229,6 +237,40 @@ def write_per_image(results: Sequence[ImageResult], path: Path) -> None:
                     "foreground_macro_iou": "" if math.isnan(iou) else round(iou, 6),
                 }
             )
+
+
+def write_confusions(results: Sequence[ImageResult], path: Path) -> None:
+    """Per-image confusion matrices with the image IDs and grouping keys they belong to."""
+    np.savez_compressed(
+        path,
+        image_ids=np.array([r.image_id for r in results]),
+        sequence_ids=np.array(["" if r.sequence_id is None else r.sequence_id for r in results]),
+        frame_indices=np.array(
+            [-1 if r.frame_index is None else r.frame_index for r in results], dtype=np.int64
+        ),
+        confusions=np.stack([r.confusion for r in results]).astype(np.int64),
+    )
+
+
+@dataclass(frozen=True)
+class SavedConfusions:
+    image_ids: list[str]
+    sequence_ids: list[str | None]
+    frame_indices: list[int | None]
+    confusions: np.ndarray
+
+    def groups(self) -> dict[str, list[str]]:
+        return bootstrap_groups(self.sequence_ids, self.frame_indices)
+
+
+def load_confusions(path: Path) -> SavedConfusions:
+    with np.load(path, allow_pickle=False) as data:
+        return SavedConfusions(
+            image_ids=[str(i) for i in data["image_ids"]],
+            sequence_ids=[str(s) or None for s in data["sequence_ids"]],
+            frame_indices=[None if f < 0 else int(f) for f in data["frame_indices"]],
+            confusions=data["confusions"].astype(np.int64),
+        )
 
 
 def load_predictor(kind: str, model_dir: Path | None, temperature: float = 1.0) -> Predictor:
@@ -293,6 +335,7 @@ def main(argv: list[str] | None = None) -> int:
     out.mkdir(parents=True, exist_ok=True)
     (out / "report.json").write_text(json.dumps(report, indent=2) + "\n")
     write_per_image(results, out / "per_image.csv")
+    write_confusions(results, out / "confusions.npz")
     seg = report["segmentation"]
     log.info(
         "%s on %s (%d images): foreground macro IoU %s, coverage MAE %.2f pp -> %s",
