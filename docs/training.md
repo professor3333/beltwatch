@@ -106,10 +106,12 @@ uv run python scripts/evaluate.py --model segformer --model-dir models/segformer
 
 Its configuration matches the U-Net's in data, preprocessing, augmentation,
 schedule, and loss, and a test enforces this, so the comparison isolates the
-architecture. Choose the deployed model on validation foreground macro IoU,
-minority-class IoU, memory, and measured CPU latency. A well-tuned U-Net is a
-legitimate winner. The MiT-B0 weights are for noncommercial research and
-evaluation only.
+architecture. Compare the two val reports with
+`scripts/compare.py reports/segformer_b0-val reports/unet_resnet18-val`,
+which gives the difference a paired-bootstrap interval. Choose the deployed
+model on validation foreground macro IoU, minority-class IoU, memory, and
+measured CPU latency. A well-tuned U-Net is a legitimate winner. The MiT-B0
+weights are for noncommercial research and evaluation only.
 
 ## 6. Inspect runs
 

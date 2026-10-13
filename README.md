@@ -210,7 +210,13 @@ uv run python scripts/evaluate.py --model all-background --split val
 uv run python scripts/evaluate.py --model random-forest --model-dir models/random-forest --split val
 ```
 
-Reports go to `reports/<model>-<split>/` (`report.json` and `per_image.csv`).
+Reports go to `reports/<model>-<split>/` (`report.json`, `per_image.csv`, and
+the per-image confusion matrices in `confusions.npz`). To compare two models
+on the same images with a paired bootstrap over recording groups:
+
+```bash
+uv run python scripts/compare.py reports/unet_resnet18-val reports/random-forest-val
+```
 
 ### Training models
 

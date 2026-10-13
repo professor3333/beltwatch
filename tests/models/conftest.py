@@ -7,6 +7,10 @@ import pytest
 import yaml
 from PIL import Image
 
+from beltwatch.data.dataset import Sample
+from beltwatch.labels import CARDBOARD
+from tests.models.helpers import INVERSE
+
 REPO = Path(__file__).resolve().parents[2]
 SOURCE_CARDBOARD, SOURCE_METAL = 2, 3  # release category IDs
 
@@ -63,3 +67,20 @@ def tiny_data_config(tmp_path: Path) -> Path:
     path = tmp_path / "data.yaml"
     path.write_text(yaml.safe_dump(config))
     return path
+
+
+@pytest.fixture
+def images(tmp_path: Path) -> tuple[list[Sample], dict[int, np.ndarray]]:
+    """Six small val frames over three sequences, with cardboard coverage growing per frame."""
+    samples, masks = [], {}
+    for i in range(6):
+        internal = np.zeros((20, 30), dtype=np.uint8)
+        internal[: 2 + 3 * i, :10] = CARDBOARD  # coverage grows with i
+        source = np.vectorize(INVERSE.get)(internal).astype(np.uint8)
+        rgb = np.full((20, 30, 3), i, dtype=np.uint8)
+        Image.fromarray(rgb).save(tmp_path / f"{i}.png")
+        Image.fromarray(source).save(tmp_path / f"{i}_m.png")
+        image_id = f"val/0{i % 3 + 1}_frame_{i * 600:06d}"
+        samples.append(Sample(image_id, tmp_path / f"{i}.png", tmp_path / f"{i}_m.png"))
+        masks[i] = internal
+    return samples, masks
