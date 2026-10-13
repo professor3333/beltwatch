@@ -112,6 +112,25 @@ dataset-version files) is saved as the version's output. To resume a run that
 stopped early, attach that version's output with **Add Input** and commit
 again: the notebook copies it back and training resumes from `latest.pt`.
 
+`MODEL = "baselines"` runs on a CPU session (Accelerator: None), so it uses
+no GPU quota. Upload the trained runs as a private Kaggle Dataset, one folder
+per run holding `best.pt` and `run.json`, and attach it. The notebook then
+does the following on val:
+
+1. Re-scores each checkpoint, so its report carries `confusions.npz`.
+2. Compares SegFormer with the U-Net.
+3. Evaluates the all-background baseline.
+4. Tunes the random forest.
+5. Compares each neural model with the tuned forest.
+
+After `dvc repro`, the notebook checks the rebuilt dataset-version files
+against the commit. If only the download time in
+`zerowaste-f-download.json` differs (and the `dvc.lock` hash that follows
+from it), it restores the committed copies, so runs are recorded against a
+clean commit rather than `-dirty`. Any other difference is reported and left
+in place. The SegFormer run of 2026-10-12 is tagged `-dirty` for exactly this
+reason; its other dataset-version files are byte-identical to the commit.
+
 ## 5. SegFormer-B0 (challenger)
 
 ```bash
