@@ -67,7 +67,6 @@ class TrainConfig(_Strict):
     augment: AugmentConfig = AugmentConfig()
     optimization: OptimizationConfig
     loss: LossConfig = LossConfig()
-    sampling: Literal["uniform"] = "uniform"
     evaluation: EvaluationConfig = EvaluationConfig()
     early_stopping_patience: int | None = Field(default=None, ge=1)
     runtime: RuntimeConfig = RuntimeConfig()

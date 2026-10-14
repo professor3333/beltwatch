@@ -163,7 +163,46 @@ model on validation foreground macro IoU, minority-class IoU, memory, and
 measured CPU latency. A well-tuned U-Net is a legitimate winner. The MiT-B0
 weights are for noncommercial research and evaluation only.
 
-## 6. Inspect runs
+## 6. Declared experiments (SegFormer-B0)
+
+The first error analysis on val (docs/error_analysis.md, 2026-10-14) found
+that rigid plastic is mostly predicted as soft plastic and metal mostly as
+background. The experiments below target those failures. Each is
+`configs/segformer_b0.yaml` with one change, in `configs/experiments/`, and a
+test enforces that nothing else differs.
+
+| Config | Change | Purpose |
+|---|---|---|
+| `segformer-b0-ce-seed1` | seed 1 | seed-to-seed spread of the baseline |
+| `segformer-b0-ce-dice` | cross-entropy + foreground Dice | loss |
+| `segformer-b0-ce-material` | `augment.material_crop_prob: 0.5` | sampling: half the crops contain a material, chosen uniformly among the materials in the image |
+| `segformer-b0-ce-classweights` | class weights 1, 2.8, 4, 10, 10 | restrained weighting: square root of the background-to-class pixel ratio on train, capped at 10 |
+| `segformer-b0-ce-seed2` | seed 2 | third seed of the finalist, if the baseline stays the finalist |
+
+`MODEL = "experiments"` in `notebooks/train_kaggle.ipynb` trains the first
+four in one GPU session (about 9 hours), evaluates each on val, and compares
+each with the baseline run (seed 0) by paired bootstrap.
+
+**Adoption rule** (declared on 2026-10-14, before these runs):
+
+1. A change is adopted only if all three hold for its val foreground macro
+   IoU against the seed-0 baseline: the gain exceeds 2 points, it exceeds
+   the absolute difference between seeds 0 and 1 of the baseline, and the
+   paired-bootstrap interval over 1000-frame blocks lies above 0.
+2. If several qualify, the largest gain is adopted. Combinations are not
+   tried in this round.
+3. If none qualifies, the baseline configuration is the finalist and
+   `segformer-b0-ce-seed2` completes its three seeds. An adopted change
+   gets its own seed 1 and seed 2 runs.
+4. Every experiment's per-class IoU (rigid plastic and metal in particular)
+   and coverage MAE are reported, whether it is adopted or not.
+
+Each run's best epoch is chosen on val, so every val number here is
+optimistic in the same way. Only the declared release is scored on the test
+split, once. Inference resolution is not part of this round, because a new
+working resolution needs its own preprocessing version.
+
+## 7. Inspect runs
 
 ```bash
 uvx mlflow ui --backend-store-uri sqlite:///mlflow.db

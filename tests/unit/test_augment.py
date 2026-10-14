@@ -1,7 +1,8 @@
 import numpy as np
+import pytest
 
 from beltwatch.data import augment as aug
-from beltwatch.labels import IGNORE_INDEX
+from beltwatch.labels import BACKGROUND, CARDBOARD, IGNORE_INDEX, METAL
 
 CONFIG = aug.AugmentConfig(crop_size=64, scale_range=(0.8, 1.2))
 
@@ -71,3 +72,73 @@ def test_flip_is_applied_to_both() -> None:
 
     np.testing.assert_array_equal(out_mask, mask[:, ::-1])
     np.testing.assert_array_equal(out_rgb, rgb[:, ::-1])
+
+
+def rare_metal_scene() -> tuple[np.ndarray, np.ndarray]:
+    """Mostly background, a large cardboard area, and one 3x3 metal piece."""
+    mask = np.full((200, 300), BACKGROUND, dtype=np.uint8)
+    mask[:, :100] = CARDBOARD
+    mask[150:153, 250:253] = METAL
+    return np.zeros((200, 300, 3), dtype=np.uint8), mask
+
+
+def test_uniform_cropping_draws_are_unchanged() -> None:
+    rgb, mask = rare_metal_scene()
+    for seed in range(10):
+        rng = np.random.default_rng(seed)
+        top, left = int(rng.integers(0, 200 - 64 + 1)), int(rng.integers(0, 300 - 64 + 1))
+
+        _, out_mask, _ = aug.random_crop(rgb, mask, 64, np.random.default_rng(seed), 0.0)
+
+        np.testing.assert_array_equal(out_mask, mask[top : top + 64, left : left + 64])
+
+
+def test_material_crops_reach_a_rare_material() -> None:
+    rgb, mask = rare_metal_scene()
+
+    def metal_share(prob: float) -> float:
+        crops = [
+            aug.random_crop(rgb, mask, 64, np.random.default_rng(seed), prob)[1]
+            for seed in range(200)
+        ]
+        return float(np.mean([(crop == METAL).any() for crop in crops]))
+
+    # Chosen uniformly among the two materials present, metal gets about half the crops.
+    assert 0.35 < metal_share(1.0) < 0.65
+    assert metal_share(0.0) < 0.15
+
+
+def test_material_lands_anywhere_in_the_crop() -> None:
+    rgb, mask = rare_metal_scene()
+    mask[:, :100] = BACKGROUND  # metal is the only material
+    positions = set()
+    for seed in range(50):
+        _, out_mask, _ = aug.random_crop(rgb, mask, 64, np.random.default_rng(seed), 1.0)
+        ys, xs = np.nonzero(out_mask == METAL)
+        assert ys.size  # every crop contains the metal piece
+        positions.add((int(ys.min()), int(xs.min())))
+    assert len(positions) > 25
+
+
+def test_material_crop_without_materials_falls_back_to_uniform() -> None:
+    rgb = np.zeros((100, 100, 3), dtype=np.uint8)
+    mask = np.full((100, 100), BACKGROUND, dtype=np.uint8)
+
+    _, out_mask, _ = aug.random_crop(rgb, mask, 64, np.random.default_rng(0), 1.0)
+
+    assert out_mask.shape == (64, 64)
+
+
+def test_material_crop_prob_is_validated() -> None:
+    with pytest.raises(ValueError, match="between 0 and 1"):
+        aug.AugmentConfig(material_crop_prob=1.5)
+
+
+def test_augment_passes_the_material_crop_setting_through() -> None:
+    rgb, mask = rare_metal_scene()
+    mask[:, :100] = BACKGROUND
+    config = aug.AugmentConfig(crop_size=64, scale_range=(1.0, 1.0), material_crop_prob=1.0)
+
+    for seed in range(10):
+        _, out_mask, _ = aug.augment(rgb, mask, 300, config, np.random.default_rng(seed))
+        assert (out_mask == METAL).any()
