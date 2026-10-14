@@ -50,6 +50,7 @@ from beltwatch.evaluation.statistics import bootstrap_metric, time_block_groups
 from beltwatch.inference.postprocessing import Coverage, compute_coverage
 from beltwatch.inference.predictor import Predictor, TemperatureScaled
 from beltwatch.inference.preprocessing import PREPROCESSING_VERSION, load_rgb
+from beltwatch.inference.temperature import Temperature, parse_temperature
 from beltwatch.labels import CLASS_NAMES, TARGET_CLASS_IDS
 from beltwatch.provenance import provenance
 
@@ -289,7 +290,7 @@ def save_report(
     slices: Mapping[str, set[str]] | None = None,
     declared_release: str | None = None,
     limited_to: int | None = None,
-    temperature: float = 1.0,
+    temperature: Temperature = 1.0,
     model_path: Path | None = None,
 ) -> dict[str, Any]:
     """Build the report and write ``report.json``, ``per_image.csv`` and ``confusions.npz``.
@@ -323,7 +324,7 @@ def model_file(kind: str, model_dir: Path | None) -> Path | None:
     raise ValueError(f"unknown model {kind!r}")
 
 
-def load_predictor(kind: str, model_dir: Path | None, temperature: float = 1.0) -> Predictor:
+def load_predictor(kind: str, model_dir: Path | None, temperature: Temperature = 1.0) -> Predictor:
     if kind == "all-background":
         return AllBackground()
     if model_dir is None:
@@ -347,7 +348,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--config", type=Path, default=Path("configs/data.yaml"))
     parser.add_argument("--out-dir", type=Path, default=Path("reports"))
     parser.add_argument("--limit", type=int, help="evaluate only the first N images (smoke runs)")
-    parser.add_argument("--temperature", type=float, default=1.0, help="calibration temperature")
+    parser.add_argument(
+        "--temperature",
+        type=parse_temperature,
+        default=1.0,
+        help="calibration temperature: one value, or one per class (comma-separated)",
+    )
     parser.add_argument(
         "--declared-release",
         help="release name; required for the locked test split and recorded in the report",

@@ -88,13 +88,19 @@ coverage_c = pixels labelled c inside the inspection region
 - **Release guard:** a release built with `--calibration` refuses a
   temperature that makes foreground ECE worse, unless the regression is
   explicitly allowed and recorded in the manifest.
-- **Known limitation.** One global temperature can trade foreground
-  calibration against overall calibration. On a 10-image development sample
-  (smoke-test model, not a result), fitting on all pixels improved overall
-  ECE but worsened foreground ECE, and fitting on foreground pixels did the
-  reverse. `--fit-scope foreground` is available. If the trained models show
-  the same conflict, class-wise (vector) temperature scaling is the next
-  step.
+- **One temperature trades foreground against overall calibration.** On
+  the first full-dataset models (docs/error_analysis.md, 2026-10-14), fitting
+  on all pixels left foreground ECE near 0.26 on val. Fitting on foreground
+  pixels (`--fit-scope foreground`) roughly halved it but raised overall ECE
+  from 0.019 / 0.038 to 0.061 / 0.084 (SegFormer / U-Net).
+- **Per-class temperatures** (`--fit-scope per-class`) fit one temperature
+  for each predicted class. A pixel's logits are divided by the temperature
+  of its predicted class, so no prediction changes and IoU and coverage are
+  unaffected; only confidence moves. Each class is fitted on the pixels
+  predicted as that class, which minimizes the total NLL, since a pixel's NLL
+  depends only on its own class's temperature. Evaluation and releases take
+  either form (`--temperature 1.2` or `--temperature 1,1.4,1.6,1.8,2`, in
+  label order). Whether this fixes both ECEs is an open measurement.
 
 ## Confidence intervals
 

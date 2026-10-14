@@ -232,7 +232,7 @@ in a release:
 
 ```bash
 uv run python -m beltwatch.evaluation.calibration --model unet --model-dir models/unet-resnet18-ce --out reports/calibration-unet
-uv run python scripts/evaluate.py --model unet --model-dir models/unet-resnet18-ce --split val --temperature <T>
+uv run python scripts/evaluate.py --model unet --model-dir models/unet-resnet18-ce --split val --temperature <T>   # or one per class: T0,T1,T2,T3,T4
 uv run python -m beltwatch.release.bundle --kind unet --model models/unet-resnet18-ce/best.pt \
     --version <v> --calibration reports/calibration-unet/calibration.json
 ```

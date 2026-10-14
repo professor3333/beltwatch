@@ -126,9 +126,9 @@ does the following on val:
 `MODEL = "analysis"` also runs on a CPU session and uses the same attached
 dataset. For each checkpoint it does the following:
 
-1. Fits a temperature on the calibration split, once on all pixels and once
-   on foreground pixels (`--fit-scope all|foreground`).
-2. Re-scores val with each temperature (`reports/calibrated-<scope>/`).
+1. Fits temperatures on the calibration split: on all pixels, on foreground
+   pixels, and one per predicted class (`--fit-scope all|foreground|per-class`).
+2. Re-scores val with each fit (`reports/calibrated-<scope>/`).
 3. Writes the error-analysis report on val (`error-reports/<run>/`).
 4. Benchmarks the model with 4 threads on 20 val frames (`benchmarks/<run>.json`).
    It uses an unactivated bundle built only for this purpose, not a release

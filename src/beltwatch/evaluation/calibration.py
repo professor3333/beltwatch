@@ -37,6 +37,12 @@ from beltwatch.data.dataset import Sample, load_samples
 from beltwatch.data.masks import load_mask, load_source_remap
 from beltwatch.inference.predictor import Predictor
 from beltwatch.inference.preprocessing import load_rgb
+from beltwatch.inference.temperature import (
+    Temperature,
+    describe,
+    parse_temperature,
+    scale_log_probs,
+)
 from beltwatch.labels import IGNORE_INDEX, TARGET_CLASS_IDS
 from beltwatch.provenance import provenance
 
@@ -46,9 +52,9 @@ DEFAULT_BINS = 15
 
 
 def softmax_with_temperature(
-    log_probs: npt.NDArray[np.float32], temperature: float
+    log_probs: npt.NDArray[np.float32], temperature: Temperature
 ) -> npt.NDArray[np.float64]:
-    z = log_probs.astype(np.float64) / temperature
+    z = scale_log_probs(log_probs.astype(np.float64), temperature, axis=1)
     z -= z.max(axis=1, keepdims=True)
     e = np.exp(z)
     out: npt.NDArray[np.float64] = e / e.sum(axis=1, keepdims=True)
@@ -56,7 +62,7 @@ def softmax_with_temperature(
 
 
 def nll(
-    log_probs: npt.NDArray[np.float32], labels: npt.NDArray[np.integer], temperature: float
+    log_probs: npt.NDArray[np.float32], labels: npt.NDArray[np.integer], temperature: Temperature
 ) -> float:
     probs = softmax_with_temperature(log_probs, temperature)
     return float(-np.log(np.clip(probs[np.arange(len(labels)), labels], 1e-12, 1.0)).mean())
@@ -86,6 +92,29 @@ def fit_temperature(
             b = lo + ratio * (hi - lo)
             fb = nll(log_probs, labels, math.exp(b))
     return round(math.exp((lo + hi) / 2), 4)
+
+
+def fit_class_temperatures(
+    log_probs: npt.NDArray[np.float32],
+    labels: npt.NDArray[np.integer],
+    *,
+    bounds: tuple[float, float] = (0.05, 20.0),
+) -> tuple[float, ...]:
+    """One NLL-minimizing temperature per predicted class.
+
+    A pixel's NLL depends only on the temperature of its predicted class, so
+    fitting each class on its own pixels minimizes the total NLL. A class that
+    is never predicted keeps temperature 1.
+    """
+    if len(labels) == 0:
+        raise ValueError("no calibration pixels")
+    predicted = log_probs.argmax(axis=1)
+    return tuple(
+        fit_temperature(log_probs[predicted == k], labels[predicted == k], bounds=bounds)
+        if np.any(predicted == k)
+        else 1.0
+        for k in range(log_probs.shape[1])
+    )
 
 
 @dataclass(frozen=True)
@@ -185,7 +214,7 @@ def collect_pixels(
 
 
 def calibration_summary(
-    log_probs: npt.NDArray[np.float32], labels: npt.NDArray[np.integer], temperature: float
+    log_probs: npt.NDArray[np.float32], labels: npt.NDArray[np.integer], temperature: Temperature
 ) -> dict[str, Any]:
     probs = softmax_with_temperature(log_probs, temperature)
     fg = foreground_mask(probs, labels)
@@ -247,14 +276,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--model-dir", type=Path, required=True)
     parser.add_argument("--split", default="calibration", choices=["calibration", "val"])
     parser.add_argument(
-        "--temperature", type=float, help="check a given temperature (val) instead of fitting"
+        "--temperature",
+        type=parse_temperature,
+        help="check a given temperature (val) instead of fitting: one value, or one per class",
     )
     parser.add_argument("--pixels-per-image", type=int, default=20000)
     parser.add_argument(
         "--fit-scope",
-        choices=["all", "foreground"],
+        choices=["all", "foreground", "per-class"],
         default="all",
-        help="pixels the temperature is fitted on; 'foreground' targets the four materials",
+        help="pixels the temperature is fitted on; 'foreground' targets the four materials; "
+        "'per-class' fits one temperature per predicted class",
     )
     parser.add_argument("--config", type=Path, default=Path("configs/data.yaml"))
     parser.add_argument("--out", type=Path, required=True)
@@ -275,8 +307,11 @@ def main(argv: list[str] | None = None) -> int:
     predictor = load_predictor(args.model, args.model_dir)
     log_probs, labels = collect_pixels(predictor, samples, remap, args.pixels_per_image)
 
+    temperature: Temperature
     if args.temperature is not None:
         temperature = args.temperature
+    elif args.fit_scope == "per-class":
+        temperature = fit_class_temperatures(log_probs, labels)
     elif args.fit_scope == "foreground":
         fg = foreground_mask(softmax_with_temperature(log_probs, 1.0), labels)
         temperature = fit_temperature(log_probs[fg], labels[fg])
@@ -308,8 +343,8 @@ def main(argv: list[str] | None = None) -> int:
         )
         (args.out / f"reliability-{scope}.svg").write_text(svg)
     log.info(
-        "T=%.3f  ECE overall %.4f -> %.4f, foreground %.4f -> %.4f",
-        temperature,
+        "T=%s  ECE overall %.4f -> %.4f, foreground %.4f -> %.4f",
+        describe(temperature),
         before["overall"]["ece"],
         after["overall"]["ece"],
         before["foreground"]["ece"],

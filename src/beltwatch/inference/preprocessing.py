@@ -25,6 +25,7 @@ import torch
 import torch.nn.functional as F
 from PIL import Image, ImageOps
 
+from beltwatch.inference.temperature import Temperature
 from beltwatch.labels import IGNORE_INDEX
 
 PREPROCESSING_VERSION: Final = "pp-1"
@@ -151,12 +152,13 @@ def prepare_mask(mask: npt.NDArray[np.uint8], geometry: Geometry) -> npt.NDArray
 
 
 def restore_probabilities(
-    logits: torch.Tensor, geometry: Geometry, temperature: float = 1.0
+    logits: torch.Tensor, geometry: Geometry, temperature: Temperature = 1.0
 ) -> torch.Tensor:
     """Map ``CxHxW`` logits on the padded grid to ``CxHxW`` probabilities at original size.
 
     Padding is cropped, logits are resized bilinearly, divided by ``temperature``
-    (from calibration), then softmaxed over classes.
+    (from calibration; per class, the temperature of each pixel's predicted
+    class), then softmaxed over classes.
     """
     if logits.ndim != 3:
         raise ValueError(f"expected CxHxW logits, got shape {tuple(logits.shape)}")
@@ -168,4 +170,7 @@ def restore_probabilities(
     ow, oh = geometry.original_size
     cropped = logits[:, :rh, :rw].unsqueeze(0).float()
     restored = F.interpolate(cropped, size=(oh, ow), mode="bilinear", align_corners=False)
+    if isinstance(temperature, tuple):
+        per_pixel = torch.tensor(temperature, dtype=restored.dtype)[restored[0].argmax(dim=0)]
+        return torch.softmax(restored[0] / per_pixel, dim=0)
     return torch.softmax(restored[0] / temperature, dim=0)

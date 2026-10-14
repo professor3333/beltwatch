@@ -22,6 +22,7 @@ from beltwatch.inference.preprocessing import (
     prepare_image,
     restore_probabilities,
 )
+from beltwatch.inference.temperature import Temperature, check_temperature
 from beltwatch.labels import CLASS_NAMES
 from beltwatch.models.registry import ModelConfig, build_model
 
@@ -68,13 +69,13 @@ class NeuralPredictor:
         model: nn.Module,
         preprocess: PreprocessConfig,
         device: torch.device | str = "cpu",
-        temperature: float = 1.0,
+        temperature: Temperature = 1.0,
         name: str = "unet_resnet18",
     ) -> None:
         self.device = torch.device(device)
         self.model = model.to(self.device).eval()
         self.preprocess = preprocess
-        self.temperature = temperature
+        self.temperature = check_temperature(temperature)
         self.name = name
 
     @torch.inference_mode()
@@ -86,7 +87,7 @@ class NeuralPredictor:
 
     @classmethod
     def from_checkpoint(
-        cls, path: Path, device: torch.device | str = "cpu", temperature: float = 1.0
+        cls, path: Path, device: torch.device | str = "cpu", temperature: Temperature = 1.0
     ) -> "NeuralPredictor":
         ckpt = torch.load(path, map_location="cpu", weights_only=True)
         if ckpt.get("format") != CHECKPOINT_FORMAT:

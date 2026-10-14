@@ -83,12 +83,17 @@ def test_missing_release_and_pointer(tmp_path: Path) -> None:
         active_version(tmp_path)
 
 
-def _calibration_report(tmp_path: Path, split: str = "calibration", fitted: bool = True) -> Path:
+def _calibration_report(
+    tmp_path: Path,
+    split: str = "calibration",
+    fitted: bool = True,
+    temperature: float | list[float] = 1.7,
+) -> Path:
     bins = {"ece": 0.1}
     report = {
         "split": split,
         "fitted": fitted,
-        "temperature": 1.7,
+        "temperature": temperature,
         "n_pixels": 1000,
         "n_images": 10,
         "before": {"overall": bins, "foreground": {"ece": 0.2}},
@@ -111,6 +116,32 @@ def test_release_takes_temperature_from_calibration_report(tmp_path: Path) -> No
     assert release.manifest.temperature == 1.7
     assert "0.1000 -> 0.0200" in release.manifest.calibration_note
     assert (tmp_path / "r" / "v1" / "calibration.json").is_file()
+
+
+def test_release_keeps_per_class_temperatures(tmp_path: Path) -> None:
+    per_class = [1.0, 1.4, 1.6, 1.8, 2.0]
+    build_release(
+        tmp_path / "r",
+        version="v1",
+        kind="all-background",
+        model_path=None,
+        review_policy=POLICY,
+        calibration_report=_calibration_report(tmp_path, temperature=per_class),
+    )
+
+    release = load_release(tmp_path / "r" / "v1")  # parsed back from manifest.json
+
+    assert release.manifest.temperature == tuple(per_class)
+    assert release.manifest.calibration_note.startswith("per-class temperature scaling")
+    with pytest.raises(ValueError, match="per-class"):
+        build_release(
+            tmp_path / "r",
+            version="v2",
+            kind="all-background",
+            model_path=None,
+            review_policy=POLICY,
+            temperature=(1.0, 2.0),
+        )
 
 
 def test_release_refuses_calibration_not_fitted_on_calibration_split(tmp_path: Path) -> None:

@@ -103,3 +103,19 @@ def test_repository_grid_loads() -> None:
 
     assert config.forests[0].pixels_per_class == 200  # the untuned baseline is a candidate
     assert 0.0 in config.prior_powers
+
+
+def test_per_class_calibration_fit_through_the_cli(tiny_data_config: Path, tmp_path: Path) -> None:
+    out = tmp_path / "rf"
+    tuner.tune(tiny_grid(tmp_path), tiny_data_config, tmp_path / "work", out, tmp_path / "reports")
+    splits = tiny_data_config.parent / "splits/zerowaste-f-splits.csv"
+    splits.write_text(splits.read_text().replace(",val,", ",calibration,"))  # a calibration split
+
+    args = ["--model", "random-forest", "--model-dir", str(out), "--fit-scope", "per-class"]
+    cal_out = tmp_path / "calibration"
+    assert calibration.main([*args, "--config", str(tiny_data_config), "--out", str(cal_out)]) == 0
+
+    saved = json.loads((cal_out / "calibration.json").read_text())
+    assert saved["fit_scope"] == "per-class" and saved["fitted"] and saved["split"] == "calibration"
+    assert len(saved["temperature"]) == 5 and all(t > 0 for t in saved["temperature"])
+    assert saved["after"]["nll"] <= saved["before"]["nll"]
