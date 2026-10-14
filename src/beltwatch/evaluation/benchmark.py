@@ -88,7 +88,8 @@ def run_benchmark(
     for i in range(warmup):
         predictor.predict_proba(frames[i % len(frames)])
 
-    predict, full = [], []
+    predict, full, pipeline = [], [], []
+    encode: dict[str, list[float]] = {"mask": [], "overlay": [], "uncertainty": []}
     started = time.perf_counter()
     for i in range(iterations):
         rgb = frames[i % len(frames)]
@@ -105,9 +106,13 @@ def run_benchmark(
             policy=policy,
             model_version=release.version,
         )
-        for array in (outcome.mask, outcome.overlay, outcome.uncertainty):
-            Image.fromarray(array).save(io.BytesIO(), format="PNG")
+        pipeline_end = time.perf_counter()
+        for name, times in encode.items():
+            t1 = time.perf_counter()
+            Image.fromarray(getattr(outcome, name)).save(io.BytesIO(), format="PNG")
+            times.append(time.perf_counter() - t1)
         full.append(time.perf_counter() - t0)
+        pipeline.append(pipeline_end - t0)
     wall = time.perf_counter() - started
 
     full_stats = _stats(full)
@@ -122,6 +127,12 @@ def run_benchmark(
         "iterations": iterations,
         "predict_only": _stats(predict),
         "full_pipeline": full_stats,
+        # Where the full pipeline's time goes: process_image (quality checks, its own
+        # prediction, coverage, uncertainty, routing) and the PNG encoding of each artifact.
+        "breakdown": {
+            "process_image": _stats(pipeline),
+            **{f"encode_{name}_png": _stats(times) for name, times in encode.items()},
+        },
         "images_per_second": throughput,
         "peak_rss_mb": peak,
         "wall_seconds": round(wall, 2),

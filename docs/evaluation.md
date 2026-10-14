@@ -135,6 +135,8 @@ fresh process:
 - warm p50 and p95 latency of prediction alone, and of the full worker
   pipeline (quality checks, prediction, coverage, uncertainty, routing, and
   PNG encoding of the artifacts)
+- a breakdown of the full pipeline into `process_image` and the PNG encoding
+  of each artifact (mask, overlay, uncertainty)
 - sequential throughput
 - peak resident memory
 

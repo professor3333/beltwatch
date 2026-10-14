@@ -79,4 +79,12 @@ def test_benchmark_reports_latency_throughput_memory_and_targets(tmp_path: Path)
     assert set(result["meets_targets"]) == {"p95_seconds", "images_per_second", "peak_rss_mb"}
     assert result["hardware"]["torch_threads"] == 1
     assert result["model_sha256"] is None  # all-background has no weights
+    parts = result["breakdown"]
+    assert set(parts) == {
+        "process_image",
+        "encode_mask_png",
+        "encode_overlay_png",
+        "encode_uncertainty_png",
+    }
+    assert parts["process_image"]["max_seconds"] <= result["full_pipeline"]["max_seconds"]
     assert result["git_commit"] == release.manifest.provenance["git_commit"]
