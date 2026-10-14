@@ -103,4 +103,79 @@ Fitted on foreground pixels (T 1.74 / 1.96), it brings foreground ECE to
   and class weighting (finding 2).
 - Calibration: one temperature per predicted class. This keeps every
   prediction unchanged and can treat background and the materials
-  separately.
+  separately. (Run on 2026-10-14; see the next entry.)
+
+### 2026-10-14: per-class temperatures and the pipeline breakdown
+
+Same checkpoints as above (weights SHA-256 `7be82fde…` SegFormer, `394dfde9…`
+U-Net). Kaggle CPU session at commit `25451a5`, recorded in every output.
+Temperatures were fitted on the calibration split (200 images, 4M sampled
+pixels) and checked on val (370 images, 740k sampled pixels). IoU and
+coverage are unchanged by every fit (SegFormer 0.3186, U-Net 0.2929 val
+foreground macro IoU).
+
+Val calibration, SegFormer-B0:
+
+| Fit scope | Temperature | NLL | ECE overall | ECE foreground |
+|---|---|---|---|---|
+| none | 1 | 0.2844 | 0.0191 | 0.2654 |
+| all pixels | 1.04 | **0.2823** | **0.0151** | 0.2577 |
+| foreground pixels | 1.74 | 0.3101 | 0.0609 | **0.1417** |
+| per predicted class | 1.06, 0.90, 1.03, 0.89, 5.68 | 0.2849 | 0.0166 | 0.2709 |
+
+Val calibration, U-Net:
+
+| Fit scope | Temperature | NLL | ECE overall | ECE foreground |
+|---|---|---|---|---|
+| none | 1 | 0.3315 | 0.0381 | 0.3009 |
+| all pixels | 1.24 | 0.3140 | 0.0136 | 0.2581 |
+| foreground pixels | 1.96 | 0.3630 | 0.0836 | **0.1404** |
+| per predicted class | 1.18, 1.44, 1.32, 2.03, 1.00 | **0.3081** | **0.0134** | 0.2365 |
+
+Per-class temperatures are in label order (background, cardboard, soft
+plastic, rigid plastic, metal). The U-Net never predicts metal, so its metal
+temperature stays 1.
+
+1. **Per-class temperatures did not fix foreground calibration.** For the
+   U-Net they improve on the single temperature in all three measures, but
+   foreground ECE only drops to 0.237. For SegFormer they are worse than
+   the single temperature on val in all three, and foreground ECE (0.271)
+   is worse than uncalibrated.
+2. **Why no argmax-preserving fit can fix foreground ECE.** The foreground
+   subset is the pixels where the ground truth *or* the prediction is a
+   material. On val, 28% (SegFormer) and 18% (U-Net) of that subset are
+   material pixels predicted as background (from the error-report
+   confusion counts). Those pixels are wrong by construction. They are
+   predicted background, like the true background pixels that make up 93%
+   (SegFormer) and 95% (U-Net) of background predictions, and a temperature
+   cannot tell the two apart without the label. Foreground ECE is therefore partly a
+   measure of missed material. It improves with better recall, not with
+   recalibration. Fitting on foreground pixels lowers it only by making
+   every prediction less confident, which raises overall ECE three- to
+   four-fold and worsens NLL.
+3. **SegFormer's metal temperature (5.68) rests on very few pixels.** Metal
+   is 0.02% of calibration pixels (12 of 200 images contain any), against
+   0.28% on val. The fit flattens metal predictions that are mostly false
+   positives on the calibration sequences. That this is what worsens its
+   val result is likely but not verified.
+
+**Decision: SegFormer-B0 uses the all-pixel temperature (T = 1.04).** It is
+the only scope that improves NLL, overall ECE and foreground ECE over the
+uncalibrated model on val. (By the same rule the U-Net would use its
+per-class temperatures, which have the lower val NLL of its two qualifying
+fits.) Foreground ECE stays reported as measured
+(0.258); it is not replaced by a metric the model does better on. Choosing
+the scope on val is model selection, which is what val is for.
+
+**Pipeline breakdown** (4-core Kaggle CPU, 20 val frames, p50 seconds):
+
+| Model | Full pipeline | `process_image` | Prediction alone | Overlay PNG | Uncertainty PNG | Mask PNG | Images/s |
+|---|---|---|---|---|---|---|---|
+| SegFormer-B0 | 1.95 | 0.96 | 0.65 | 0.75 | 0.19 | 0.03 | 0.509 |
+| U-Net | 2.15 | 1.19 | 0.83 | 0.75 | 0.16 | 0.03 | 0.468 |
+
+PNG encoding is about half of the full pipeline. The U-Net misses the 0.5
+images per second target; SegFormer meets it narrowly. The artifact PNGs are
+now encoded at zlib level 3, which on full-size val frames encoded the
+overlay about 2.3× faster for a file about 7% larger. The effect on Kaggle is
+not yet measured.
