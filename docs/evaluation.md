@@ -100,7 +100,18 @@ coverage_c = pixels labelled c inside the inspection region
   predicted as that class, which minimizes the total NLL, since a pixel's NLL
   depends only on its own class's temperature. Evaluation and releases take
   either form (`--temperature 1.2` or `--temperature 1,1.4,1.6,1.8,2`, in
-  label order). Whether this fixes both ECEs is an open measurement.
+  label order). Measured on the first models, it did not fix foreground
+  ECE (docs/error_analysis.md, second 2026-10-14 entry).
+- **Foreground ECE is partly a measure of missed material.** Its subset
+  includes material pixels predicted as background, which are wrong by
+  construction and share their predicted class with correct background
+  pixels. No recalibration that keeps the predicted class can separate them,
+  so this ECE falls mainly with better recall. It is still reported as
+  defined, next to overall ECE and NLL.
+- **Choosing the temperature:** among the fit scopes that improve NLL,
+  overall ECE and foreground ECE over the uncalibrated model on val, the one
+  with the lowest val NLL. For SegFormer-B0 only the all-pixel fit
+  qualifies; for the U-Net it is the per-class fit.
 
 ## Confidence intervals
 
