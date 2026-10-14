@@ -8,6 +8,7 @@ reviewer can see what the model made of a poor image, but they are routed to
 """
 
 import hashlib
+import io
 import json
 import time
 from collections.abc import Sequence
@@ -16,6 +17,7 @@ from typing import Any
 
 import numpy as np
 import numpy.typing as npt
+from PIL import Image
 
 from beltwatch.inference.postprocessing import (
     compute_coverage,
@@ -48,6 +50,19 @@ def cache_key(
         sort_keys=True,
     )
     return hashlib.sha256(payload.encode()).hexdigest()
+
+
+# zlib level for the artifact PNGs. On full-size val frames, level 3 encoded the
+# overlay about 2.3x faster than Pillow's default (6) for a file about 7% larger;
+# level 1 was faster still but 65% larger. PNG stays lossless at every level.
+PNG_COMPRESS_LEVEL = 3
+
+
+def encode_png(array: npt.NDArray[np.uint8]) -> bytes:
+    """Encode an artifact image the way the worker stores it."""
+    buf = io.BytesIO()
+    Image.fromarray(array).save(buf, format="PNG", compress_level=PNG_COMPRESS_LEVEL)
+    return buf.getvalue()
 
 
 @dataclass(frozen=True)

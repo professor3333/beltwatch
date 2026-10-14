@@ -29,12 +29,11 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from PIL import Image
 
 from beltwatch.api.settings import Settings
 from beltwatch.inference.predictor import Predictor
 from beltwatch.inference.preprocessing import load_rgb
-from beltwatch.jobs.pipeline import cache_key, process_image
+from beltwatch.jobs.pipeline import cache_key, encode_png, process_image
 from beltwatch.jobs.store import Claim, JobStore
 from beltwatch.release.bundle import Release, ReleaseError, active_version, load_release
 
@@ -46,7 +45,7 @@ ARTIFACT_KINDS = {"overlay": "image/png", "mask": "image/png", "uncertainty": "i
 def _write_png(array: np.ndarray, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(path.name + ".tmp")
-    Image.fromarray(array).save(tmp, format="PNG")
+    tmp.write_bytes(encode_png(array))
     tmp.replace(path)
 
 
