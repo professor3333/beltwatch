@@ -40,6 +40,7 @@ from beltwatch.data.config import load_data_config
 from beltwatch.data.dataset import Sample, load_samples
 from beltwatch.data.masks import load_mask, load_source_remap
 from beltwatch.data.validate import parse_frame_name
+from beltwatch.evaluation.runner import nan_to_none
 from beltwatch.evaluation.segmentation import (
     confusion_matrix,
     foreground_macro_iou,
@@ -319,7 +320,8 @@ def build_report(
         "galleries": {t: [s.image_id for s, _ in e] for t, e in galleries.items()},
         "beltwatch_version": __version__,
     }
-    (out / "error_analysis.json").write_text(json.dumps(summary, indent=2, default=float) + "\n")
+    text = json.dumps(nan_to_none(summary), indent=2, default=float, allow_nan=False)
+    (out / "error_analysis.json").write_text(text + "\n")  # undefined metrics are null
 
     slice_rows = []
     for slice_name, table in slices.items():

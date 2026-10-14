@@ -112,13 +112,13 @@ def evaluate_images(
     return results
 
 
-def _nan_to_none(value: Any) -> Any:
+def nan_to_none(value: Any) -> Any:
     if isinstance(value, float) and math.isnan(value):
         return None
     if isinstance(value, dict):
-        return {k: _nan_to_none(v) for k, v in value.items()}
+        return {k: nan_to_none(v) for k, v in value.items()}
     if isinstance(value, list):
-        return [_nan_to_none(v) for v in value]
+        return [nan_to_none(v) for v in value]
     return value
 
 
@@ -204,7 +204,7 @@ def build_report(
             "note": "predict_proba only, on the evaluation machine; not a serving benchmark",
         },
     }
-    return dict(_nan_to_none(report))
+    return dict(nan_to_none(report))
 
 
 def write_per_image(results: Sequence[ImageResult], path: Path) -> None:

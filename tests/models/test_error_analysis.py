@@ -45,7 +45,13 @@ def test_error_report_files_and_content(tiny_data_config: Path, tmp_path: Path) 
     ET.fromstring((out / "confusion.svg").read_text())
     distinct = {image_id for ids in summary["galleries"].values() for image_id in ids}
     assert len(list((out / "img").glob("*.png"))) == len(distinct)  # each image rendered once
-    assert json.loads((out / "error_analysis.json").read_text())["n_images"] == 4
+
+    def no_constants(name: str) -> None:
+        raise ValueError(f"{name} is not valid JSON")
+
+    saved = json.loads((out / "error_analysis.json").read_text(), parse_constant=no_constants)
+    assert saved["n_images"] == 4
+    assert saved["segmentation"]["precision"]["cardboard"] is None  # nothing predicted: undefined
 
 
 def test_error_report_refuses_the_test_split() -> None:
