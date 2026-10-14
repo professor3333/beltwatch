@@ -71,6 +71,34 @@ def test_segformer_config_matches_unet_except_the_model() -> None:
     assert unet == segformer
 
 
+EXPERIMENT_CHANGES = {
+    "segformer-b0-ce-seed1": {("runtime", "seed"): 1},
+    "segformer-b0-ce-seed2": {("runtime", "seed"): 2},
+    "segformer-b0-ce-dice": {("loss", "kind"): "ce_dice"},  # dice_weight stays at its default 1
+    "segformer-b0-ce-material": {("augment", "material_crop_prob"): 0.5},
+    "segformer-b0-ce-classweights": {("loss", "class_weights"): (1.0, 2.8, 4.0, 10.0, 10.0)},
+}
+
+
+@pytest.mark.parametrize("name", sorted(EXPERIMENT_CHANGES))
+def test_experiment_differs_from_the_segformer_baseline_only_as_declared(name: str) -> None:
+    base = load_train_config(Path("configs/segformer_b0.yaml")).model_dump()
+    experiment = load_train_config(Path(f"configs/experiments/{name}.yaml")).model_dump()
+
+    assert experiment.pop("run_name") == name
+    assert experiment.pop("output_dir") == Path(f"models/{name}")
+    base.pop("run_name"), base.pop("output_dir")
+    for (section, key), value in EXPERIMENT_CHANGES[name].items():
+        assert experiment[section][key] == value != base[section][key]
+        experiment[section][key] = base[section][key]
+    assert experiment == base
+
+
+def test_every_experiment_config_is_declared() -> None:
+    names = {path.stem for path in Path("configs/experiments").glob("*.yaml")}
+    assert names == set(EXPERIMENT_CHANGES)
+
+
 def test_training_smoke_run_writes_checkpoints_and_tracks(
     tiny_data_config: Path, tmp_path: Path
 ) -> None:
