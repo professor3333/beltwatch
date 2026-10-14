@@ -17,13 +17,11 @@ Usage::
 """
 
 import argparse
-import hashlib
 import json
 import logging
 import math
 import platform
 import random
-import subprocess
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager, nullcontext
@@ -51,6 +49,7 @@ from beltwatch.inference.neural import (
 from beltwatch.inference.preprocessing import PREPROCESSING_VERSION
 from beltwatch.models.base import SegmentationModel
 from beltwatch.models.registry import build_model, encoder_weights_description
+from beltwatch.provenance import file_digest, git_commit
 from beltwatch.training.config import TrainConfig, load_train_config
 from beltwatch.training.losses import segmentation_loss
 
@@ -92,26 +91,6 @@ def lr_factor(step: int, total_steps: int, warmup_steps: int) -> float:
         return (step + 1) / warmup_steps
     progress = (step - warmup_steps) / max(1, total_steps - warmup_steps)
     return 0.5 * (1.0 + math.cos(math.pi * min(1.0, progress)))
-
-
-def git_commit() -> str:
-    try:
-        commit = subprocess.run(
-            ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True
-        ).stdout.strip()
-        dirty = subprocess.run(
-            ["git", "status", "--porcelain", "--untracked-files=no"],
-            capture_output=True,
-            text=True,
-            check=True,
-        ).stdout.strip()
-        return f"{commit}-dirty" if dirty else commit
-    except (OSError, subprocess.CalledProcessError):
-        return "unknown"
-
-
-def file_digest(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def _flatten(prefix: str, value: Any, out: dict[str, Any]) -> dict[str, Any]:

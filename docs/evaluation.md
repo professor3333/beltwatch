@@ -112,6 +112,15 @@ coverage_c = pixels labelled c inside the inspection region
   wide. Time-block groups give narrower intervals but assume more
   independence than the data guarantees. Both are reported.
 
+## Provenance
+
+Every output records what produced it. `report.json`, `calibration.json` and
+`error_analysis.json` carry a `provenance` block: the git commit (`-dirty` if
+tracked files were modified), the model file, and its SHA-256. The benchmark
+records the commit and the release's weights digest. Release manifests record
+the commit they were built from. A neural model's digest matches the
+`best_checkpoint_sha256` tag that MLflow logged at training time.
+
 ## Runtime benchmark
 
 `scripts/benchmark.py --release model_releases/<v> --threads 4` measures, in a

@@ -39,7 +39,7 @@ from beltwatch.data.config import load_data_config
 from beltwatch.data.dataset import load_samples
 from beltwatch.data.masks import load_source_remap
 from beltwatch.evaluation.runner import evaluate_images, save_report, unseen_sequence_ids
-from beltwatch.training.loop import git_commit
+from beltwatch.provenance import git_commit
 
 log = logging.getLogger(__name__)
 
@@ -130,6 +130,7 @@ def tune(
                     split="val",
                     split_manifest_id=split_manifest_id,
                     slices=slices,
+                    model_path=forest_dir / "model.joblib",
                 )
                 log.info("%s scored in %.0f s", candidate, time.perf_counter() - start)
             seg = report["segmentation"]

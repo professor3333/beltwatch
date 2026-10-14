@@ -35,6 +35,7 @@ from beltwatch import __version__
 from beltwatch.inference.predictor import Predictor
 from beltwatch.inference.preprocessing import PREPROCESSING_VERSION
 from beltwatch.labels import CLASS_NAMES
+from beltwatch.provenance import git_commit
 from beltwatch.review.policy import ReviewPolicy, load_review_policy
 
 ModelKind = Literal["unet", "segformer", "random-forest", "all-background"]
@@ -250,7 +251,11 @@ def build_release(
         calibration_note=calibration_note
         or ("not calibrated (temperature 1.0)" if temperature == 1.0 else "temperature scaling"),
         review_policy=review_policy,
-        provenance={"beltwatch_version": __version__, **(provenance or {})},
+        provenance={
+            "beltwatch_version": __version__,
+            "git_commit": git_commit(),
+            **(provenance or {}),
+        },
         limitations=limitations,
         licenses=DEFAULT_LICENSES,
         evaluation_report=report_name,

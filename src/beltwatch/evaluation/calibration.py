@@ -38,6 +38,7 @@ from beltwatch.data.masks import load_mask, load_source_remap
 from beltwatch.inference.predictor import Predictor
 from beltwatch.inference.preprocessing import load_rgb
 from beltwatch.labels import IGNORE_INDEX, TARGET_CLASS_IDS
+from beltwatch.provenance import provenance
 
 log = logging.getLogger(__name__)
 
@@ -239,7 +240,7 @@ def reliability_svg(before: dict[str, Any], after: dict[str, Any] | None, title:
 
 
 def main(argv: list[str] | None = None) -> int:
-    from beltwatch.evaluation.runner import load_predictor
+    from beltwatch.evaluation.runner import load_predictor, model_file
 
     parser = argparse.ArgumentParser(description="Fit or check temperature scaling.")
     parser.add_argument("--model", required=True, choices=["random-forest", "unet", "segformer"])
@@ -294,6 +295,7 @@ def main(argv: list[str] | None = None) -> int:
         "n_images": len(samples),
         "n_pixels": len(labels),
         "split_manifest_id": splits_summary["split_manifest_id"],
+        "provenance": provenance(model_file(args.model, args.model_dir)),
         "before": before,
         "after": after,
         "beltwatch_version": __version__,

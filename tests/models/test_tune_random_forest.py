@@ -6,7 +6,8 @@ import yaml
 
 from beltwatch.baselines import tune_random_forest as tuner
 from beltwatch.baselines.random_forest import RandomForestSegmenter
-from beltwatch.evaluation import compare, runner
+from beltwatch.evaluation import calibration, compare, runner
+from beltwatch.provenance import file_digest
 
 REPO = Path(__file__).resolve().parents[2]
 
@@ -59,6 +60,19 @@ def test_selected_forest_reproduces_its_report_through_the_cli(
     result = compare.compare_reports(tmp_path / "random-forest-val", reports / "random-forest-val")
     diff = result["difference_a_minus_b"]["foreground_macro_iou"]["groups_by_sequence"]
     assert diff["estimate"] == 0.0
+
+    # Both reports trace back to the same weights: the tuned candidate and its copy in --out.
+    digest = file_digest(out / "model.joblib")
+    assert result["a"]["provenance"]["model_sha256"] == digest
+    assert result["b"]["provenance"]["model_sha256"] == digest
+    assert result["a"]["provenance"]["model_file"] == str(out / "model.joblib")
+
+    check = ["--model", "random-forest", "--model-dir", str(out), "--split", "val"]
+    cal_out = tmp_path / "calibration"
+    extra = ["--temperature", "1.0", "--config", str(tiny_data_config), "--out", str(cal_out)]
+    assert calibration.main([*check, *extra]) == 0
+    saved = json.loads((cal_out / "calibration.json").read_text())
+    assert saved["provenance"]["model_sha256"] == digest
 
 
 def test_rerun_reuses_fitted_forests_and_reports(

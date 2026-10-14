@@ -51,6 +51,7 @@ from beltwatch.inference.postprocessing import Coverage, compute_coverage
 from beltwatch.inference.predictor import Predictor, TemperatureScaled
 from beltwatch.inference.preprocessing import PREPROCESSING_VERSION, load_rgb
 from beltwatch.labels import CLASS_NAMES, TARGET_CLASS_IDS
+from beltwatch.provenance import provenance
 
 log = logging.getLogger(__name__)
 
@@ -289,18 +290,37 @@ def save_report(
     declared_release: str | None = None,
     limited_to: int | None = None,
     temperature: float = 1.0,
+    model_path: Path | None = None,
 ) -> dict[str, Any]:
-    """Build the report and write ``report.json``, ``per_image.csv`` and ``confusions.npz``."""
+    """Build the report and write ``report.json``, ``per_image.csv`` and ``confusions.npz``.
+
+    ``model_path`` is the file the predictor was loaded from; its digest and the
+    code commit are recorded under ``provenance``.
+    """
     report = build_report(results, model=model, split=split, slices=slices)
     report["split_manifest_id"] = split_manifest_id
     report["declared_release"] = declared_release
     report["limited_to"] = limited_to
     report["temperature"] = temperature
+    report["provenance"] = provenance(model_path)
     out.mkdir(parents=True, exist_ok=True)
     (out / "report.json").write_text(json.dumps(report, indent=2) + "\n")
     write_per_image(results, out / "per_image.csv")
     write_confusions(results, out / "confusions.npz")
     return report
+
+
+def model_file(kind: str, model_dir: Path | None) -> Path | None:
+    """The file ``load_predictor`` reads for ``kind``; None for the all-background baseline."""
+    if kind == "all-background":
+        return None
+    if model_dir is None:
+        raise ValueError(f"--model-dir is required for {kind}")
+    if kind == "random-forest":
+        return model_dir / "model.joblib"
+    if kind in ("unet", "segformer"):
+        return model_dir / "best.pt"
+    raise ValueError(f"unknown model {kind!r}")
 
 
 def load_predictor(kind: str, model_dir: Path | None, temperature: float = 1.0) -> Predictor:
@@ -362,6 +382,7 @@ def main(argv: list[str] | None = None) -> int:
         declared_release=args.declared_release,
         limited_to=args.limit,
         temperature=args.temperature,
+        model_path=model_file(args.model, args.model_dir),
     )
     seg = report["segmentation"]
     log.info(
