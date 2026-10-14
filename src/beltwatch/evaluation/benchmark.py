@@ -18,7 +18,6 @@ at most 2 GB.
 """
 
 import argparse
-import io
 import json
 import os
 import platform
@@ -37,7 +36,7 @@ from PIL import Image
 from beltwatch import __version__
 from beltwatch.inference.postprocessing import FULL_FRAME
 from beltwatch.inference.preprocessing import load_rgb
-from beltwatch.jobs.pipeline import process_image
+from beltwatch.jobs.pipeline import encode_png, process_image
 from beltwatch.provenance import git_commit
 from beltwatch.release.bundle import Release, load_release
 
@@ -109,7 +108,7 @@ def run_benchmark(
         pipeline_end = time.perf_counter()
         for name, times in encode.items():
             t1 = time.perf_counter()
-            Image.fromarray(getattr(outcome, name)).save(io.BytesIO(), format="PNG")
+            encode_png(getattr(outcome, name))
             times.append(time.perf_counter() - t1)
         full.append(time.perf_counter() - t0)
         pipeline.append(pipeline_end - t0)
@@ -128,7 +127,8 @@ def run_benchmark(
         "predict_only": _stats(predict),
         "full_pipeline": full_stats,
         # Where the full pipeline's time goes: process_image (quality checks, its own
-        # prediction, coverage, uncertainty, routing) and the PNG encoding of each artifact.
+        # prediction, coverage, uncertainty, routing) and the PNG encoding of each
+        # artifact, with the worker's encoder.
         "breakdown": {
             "process_image": _stats(pipeline),
             **{f"encode_{name}_png": _stats(times) for name, times in encode.items()},

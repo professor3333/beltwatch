@@ -136,7 +136,8 @@ fresh process:
   pipeline (quality checks, prediction, coverage, uncertainty, routing, and
   PNG encoding of the artifacts)
 - a breakdown of the full pipeline into `process_image` and the PNG encoding
-  of each artifact (mask, overlay, uncertainty)
+  of each artifact (mask, overlay, uncertainty), using the worker's own
+  encoder (`jobs.pipeline.encode_png`, zlib level 3)
 - sequential throughput
 - peak resident memory
 
