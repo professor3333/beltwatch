@@ -10,6 +10,13 @@ from typing import Protocol
 import numpy as np
 import numpy.typing as npt
 
+from beltwatch.inference.temperature import (
+    Temperature,
+    check_temperature,
+    is_identity,
+    scale_log_probs,
+)
+
 
 class Predictor(Protocol):
     name: str
@@ -20,24 +27,22 @@ class Predictor(Protocol):
 
 
 class TemperatureScaled:
-    """Apply a fitted temperature to any predictor's probabilities.
+    """Apply a fitted temperature (scalar or per predicted class) to any predictor.
 
     ``softmax(log p / T)`` equals ``softmax(logits / T)``, so this is exact for
     neural models and also calibrates the random forest.
     """
 
-    def __init__(self, predictor: Predictor, temperature: float) -> None:
-        if temperature <= 0:
-            raise ValueError("temperature must be positive")
+    def __init__(self, predictor: Predictor, temperature: Temperature) -> None:
         self.predictor = predictor
-        self.temperature = temperature
+        self.temperature = check_temperature(temperature)
         self.name = predictor.name
 
     def predict_proba(self, rgb: npt.NDArray[np.uint8]) -> npt.NDArray[np.float32]:
         proba = self.predictor.predict_proba(rgb)
-        if self.temperature == 1.0:
+        if is_identity(self.temperature):
             return proba
-        z = np.log(np.clip(proba, 1e-8, 1.0)) / self.temperature
+        z = scale_log_probs(np.log(np.clip(proba, 1e-8, 1.0)), self.temperature, axis=0)
         z -= z.max(axis=0, keepdims=True)
         e = np.exp(z)
         return (e / e.sum(axis=0, keepdims=True)).astype(np.float32)

@@ -29,11 +29,17 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from beltwatch import __version__
 from beltwatch.inference.predictor import Predictor
 from beltwatch.inference.preprocessing import PREPROCESSING_VERSION
+from beltwatch.inference.temperature import (
+    Temperature,
+    check_temperature,
+    is_identity,
+    parse_temperature,
+)
 from beltwatch.labels import CLASS_NAMES
 from beltwatch.provenance import git_commit
 from beltwatch.review.policy import ReviewPolicy, load_review_policy
@@ -72,7 +78,7 @@ class ReleaseManifest(BaseModel):
     model: ModelFile
     preprocessing_version: str
     label_map: dict[str, str]
-    temperature: float = 1.0
+    temperature: float | tuple[float, ...] = 1.0
     calibration_note: str = "not calibrated (temperature 1.0)"
     review_policy: ReviewPolicy
     provenance: dict[str, Any]
@@ -80,6 +86,11 @@ class ReleaseManifest(BaseModel):
     licenses: tuple[str, ...]
     evaluation_report: str | None = None
     calibration_report: str | None = None
+
+    @field_validator("temperature")
+    @classmethod
+    def _valid_temperature(cls, value: float | tuple[float, ...]) -> float | tuple[float, ...]:
+        return check_temperature(value)
 
 
 def _digest(path: Path) -> str:
@@ -181,7 +192,7 @@ def build_release(
     kind: ModelKind,
     model_path: Path | None,
     review_policy: ReviewPolicy,
-    temperature: float = 1.0,
+    temperature: Temperature = 1.0,
     calibration_note: str | None = None,
     evaluation_report: Path | None = None,
     calibration_report: Path | None = None,
@@ -190,6 +201,7 @@ def build_release(
     limitations: tuple[str, ...] = DEFAULT_LIMITATIONS,
 ) -> Release:
     """Create an immutable bundle; refuses to overwrite an existing version."""
+    temperature = check_temperature(temperature)
     directory = releases_dir / version
     if directory.exists():
         raise ReleaseError(f"release {version} already exists; releases are immutable")
@@ -219,7 +231,7 @@ def build_release(
             raise ReleaseError(
                 "the calibration report must come from a fit on the calibration split"
             )
-        temperature = float(calibration["temperature"])
+        temperature = check_temperature(calibration["temperature"])
         before, after = calibration["before"], calibration["after"]
         fg_before, fg_after = before["foreground"]["ece"], after["foreground"]["ece"]
         if fg_after > fg_before and not allow_foreground_calibration_regression:
@@ -227,8 +239,9 @@ def build_release(
                 f"calibration worsens foreground ECE ({fg_before:.4f} -> {fg_after:.4f}); "
                 "refit with --fit-scope foreground, or explicitly allow the regression"
             )
+        method = "per-class temperature" if isinstance(temperature, tuple) else "temperature"
         calibration_note = (
-            "temperature scaling fitted on the calibration split "
+            f"{method} scaling fitted on the calibration split "
             f"({calibration['n_pixels']} pixels, "
             f"{calibration['n_images']} images); ECE overall {before['overall']['ece']:.4f} -> "
             f"{after['overall']['ece']:.4f}, foreground {before['foreground']['ece']:.4f} -> "
@@ -249,7 +262,11 @@ def build_release(
         label_map={str(k): v for k, v in CLASS_NAMES.items()},
         temperature=temperature,
         calibration_note=calibration_note
-        or ("not calibrated (temperature 1.0)" if temperature == 1.0 else "temperature scaling"),
+        or (
+            "not calibrated (temperature 1.0)"
+            if is_identity(temperature)
+            else "temperature scaling"
+        ),
         review_policy=review_policy,
         provenance={
             "beltwatch_version": __version__,
@@ -274,7 +291,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--model", type=Path, help="checkpoint file or model directory")
     parser.add_argument("--review-policy", type=Path, default=Path("configs/review_policy.yaml"))
-    parser.add_argument("--temperature", type=float, default=1.0)
+    parser.add_argument("--temperature", type=parse_temperature, default=1.0)
     parser.add_argument("--evaluation", type=Path, help="evaluation report.json to include")
     parser.add_argument("--calibration", type=Path, help="calibration.json; sets the temperature")
     parser.add_argument(

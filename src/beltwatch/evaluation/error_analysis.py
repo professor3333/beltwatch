@@ -54,6 +54,7 @@ from beltwatch.inference.postprocessing import (
 from beltwatch.inference.predictor import Predictor
 from beltwatch.inference.preprocessing import load_rgb
 from beltwatch.inference.quality import assess_quality
+from beltwatch.inference.temperature import parse_temperature
 from beltwatch.labels import CLASS_NAMES, IGNORE_INDEX, NUM_CLASSES, TARGET_CLASS_IDS
 from beltwatch.provenance import provenance
 from beltwatch.review.policy import QualityPolicy
@@ -364,7 +365,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--model-dir", type=Path)
     parser.add_argument("--split", default="val", choices=["val", "calibration", "test"])
-    parser.add_argument("--temperature", type=float, default=1.0)
+    parser.add_argument("--temperature", type=parse_temperature, default=1.0)
     parser.add_argument("--per-gallery", type=int, default=6)
     parser.add_argument("--limit", type=int)
     parser.add_argument("--config", type=Path, default=Path("configs/data.yaml"))

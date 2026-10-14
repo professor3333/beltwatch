@@ -80,3 +80,11 @@ def test_model_file_names_what_each_predictor_loads(tmp_path: Path) -> None:
     assert runner.model_file("segformer", tmp_path) == tmp_path / "best.pt"
     with pytest.raises(ValueError, match="unknown"):
         runner.model_file("resnet", tmp_path)
+
+
+def test_cli_scores_with_per_class_temperatures(tiny_data_config: Path, tmp_path: Path) -> None:
+    args = ["--model", "all-background", "--split", "val", "--config", str(tiny_data_config)]
+    assert runner.main([*args, "--temperature", "1,2,2,2,2", "--out-dir", str(tmp_path)]) == 0
+
+    report = json.loads((tmp_path / "all-background-val/report.json").read_text())
+    assert report["temperature"] == [1.0, 2.0, 2.0, 2.0, 2.0]
