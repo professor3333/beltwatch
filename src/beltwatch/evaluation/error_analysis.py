@@ -40,7 +40,7 @@ from beltwatch.data.config import load_data_config
 from beltwatch.data.dataset import Sample, load_samples
 from beltwatch.data.masks import load_mask, load_source_remap
 from beltwatch.data.validate import parse_frame_name
-from beltwatch.evaluation.runner import nan_to_none
+from beltwatch.evaluation.runner import load_predictor, model_file, nan_to_none
 from beltwatch.evaluation.segmentation import (
     confusion_matrix,
     foreground_macro_iou,
@@ -55,6 +55,7 @@ from beltwatch.inference.predictor import Predictor
 from beltwatch.inference.preprocessing import load_rgb
 from beltwatch.inference.quality import assess_quality
 from beltwatch.labels import CLASS_NAMES, IGNORE_INDEX, NUM_CLASSES, TARGET_CLASS_IDS
+from beltwatch.provenance import provenance
 from beltwatch.review.policy import QualityPolicy
 
 log = logging.getLogger(__name__)
@@ -257,6 +258,7 @@ def build_report(
     *,
     split: str,
     k: int = 6,
+    model_path: Path | None = None,
 ) -> dict[str, Any]:
     out.mkdir(parents=True, exist_ok=True)
     (out / "img").mkdir(exist_ok=True)
@@ -318,6 +320,7 @@ def build_report(
         "confusion_counts": total.tolist(),
         "slices": slices,
         "galleries": {t: [s.image_id for s, _ in e] for t, e in galleries.items()},
+        "provenance": provenance(model_path),
         "beltwatch_version": __version__,
     }
     text = json.dumps(nan_to_none(summary), indent=2, default=float, allow_nan=False)
@@ -355,8 +358,6 @@ def build_report(
 
 
 def main(argv: list[str] | None = None) -> int:
-    from beltwatch.evaluation.runner import load_predictor
-
     parser = argparse.ArgumentParser(description="Generate an error-analysis report.")
     parser.add_argument(
         "--model", required=True, choices=["all-background", "random-forest", "unet", "segformer"]
@@ -384,7 +385,13 @@ def main(argv: list[str] | None = None) -> int:
     remap = load_source_remap(data.paths.manifests_dir / f"{name}-validation.json")
     predictor = load_predictor(args.model, args.model_dir, args.temperature)
     summary = build_report(
-        predictor, samples, remap, args.out, split=args.split, k=args.per_gallery
+        predictor,
+        samples,
+        remap,
+        args.out,
+        split=args.split,
+        k=args.per_gallery,
+        model_path=model_file(args.model, args.model_dir),
     )
     log.info(
         "foreground macro IoU %.4f; report at %s",

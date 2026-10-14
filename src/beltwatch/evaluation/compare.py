@@ -105,6 +105,7 @@ def compare_reports(dir_a: Path, dir_b: Path, *, n_resamples: int = 2000) -> dic
             "model": report["model"],
             "report_dir": str(directory),
             "temperature": report.get("temperature"),
+            "provenance": report.get("provenance"),
             "foreground_macro_iou": seg["foreground_macro_iou"],
             "iou": {CLASS_NAMES[c]: seg["iou"][CLASS_NAMES[c]] for c in TARGET_CLASS_IDS},
         }

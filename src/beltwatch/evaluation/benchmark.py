@@ -38,6 +38,7 @@ from beltwatch import __version__
 from beltwatch.inference.postprocessing import FULL_FRAME
 from beltwatch.inference.preprocessing import load_rgb
 from beltwatch.jobs.pipeline import process_image
+from beltwatch.provenance import git_commit
 from beltwatch.release.bundle import Release, load_release
 
 TARGETS = {"p95_seconds": 3.0, "images_per_second": 0.5, "peak_rss_mb": 2048.0}
@@ -115,6 +116,8 @@ def run_benchmark(
     return {
         "release": release.version,
         "model_kind": release.manifest.model.kind,
+        "model_sha256": release.manifest.model.sha256,
+        "git_commit": git_commit(),
         "image_size": list(frames[0].shape[1::-1]),
         "iterations": iterations,
         "predict_only": _stats(predict),

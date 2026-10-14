@@ -71,3 +71,12 @@ def test_slices_and_per_image_csv(
 def test_test_split_requires_declared_release() -> None:
     with pytest.raises(SystemExit):
         runner.main(["--model", "all-background", "--split", "test"])
+
+
+def test_model_file_names_what_each_predictor_loads(tmp_path: Path) -> None:
+    assert runner.model_file("all-background", None) is None
+    assert runner.model_file("random-forest", tmp_path) == tmp_path / "model.joblib"
+    assert runner.model_file("unet", tmp_path) == runner.model_file("segformer", tmp_path)
+    assert runner.model_file("segformer", tmp_path) == tmp_path / "best.pt"
+    with pytest.raises(ValueError, match="unknown"):
+        runner.model_file("resnet", tmp_path)

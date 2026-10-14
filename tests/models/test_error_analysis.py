@@ -10,6 +10,7 @@ from beltwatch.data.dataset import load_samples
 from beltwatch.data.masks import load_source_remap
 from beltwatch.evaluation import error_analysis as ea
 from beltwatch.evaluation.benchmark import run_benchmark, synthetic_frames
+from beltwatch.provenance import file_digest
 from beltwatch.release.bundle import build_release
 from beltwatch.review.policy import load_review_policy
 
@@ -31,8 +32,10 @@ def val_samples(data_config: Path):  # type: ignore[no-untyped-def]
 def test_error_report_files_and_content(tiny_data_config: Path, tmp_path: Path) -> None:
     samples, remap = val_samples(tiny_data_config)
 
+    weights = tmp_path / "weights.bin"
+    weights.write_bytes(b"not really weights")
     summary = ea.build_report(
-        AllBackground(), samples, remap, tmp_path / "report", split="train", k=3
+        AllBackground(), samples, remap, tmp_path / "report", split="train", k=3, model_path=weights
     )
 
     out = tmp_path / "report"
@@ -52,6 +55,7 @@ def test_error_report_files_and_content(tiny_data_config: Path, tmp_path: Path) 
     saved = json.loads((out / "error_analysis.json").read_text(), parse_constant=no_constants)
     assert saved["n_images"] == 4
     assert saved["segmentation"]["precision"]["cardboard"] is None  # nothing predicted: undefined
+    assert saved["provenance"]["model_sha256"] == file_digest(weights)
 
 
 def test_error_report_refuses_the_test_split() -> None:
@@ -74,3 +78,5 @@ def test_benchmark_reports_latency_throughput_memory_and_targets(tmp_path: Path)
     assert result["images_per_second"] > 0 and result["peak_rss_mb"] > 0
     assert set(result["meets_targets"]) == {"p95_seconds", "images_per_second", "peak_rss_mb"}
     assert result["hardware"]["torch_threads"] == 1
+    assert result["model_sha256"] is None  # all-background has no weights
+    assert result["git_commit"] == release.manifest.provenance["git_commit"]
