@@ -1,0 +1,59 @@
+# Release declaration, committed before the locked test split is read.
+# The Kaggle notebook's `release` mode builds this bundle, checks it against this
+# file (python -m beltwatch.release.declaration), benchmarks it, and then scores
+# the test split once. Nothing here changes after the test split has been read;
+# a later model needs a new release and, for a fresh unbiased claim, a new
+# untouched evaluation set (docs/evaluation.md).
+version: beltwatch-0.1.0
+declared_on: 2026-10-15
+replaces: null  # first release
+reason: >-
+  SegFormer-B0 with the baseline configuration, the finalist of the declared
+  experiments (docs/training.md §6: no change adopted in round 1 or round 2).
+  Its seed-0 run was fixed as the release candidate before round 2. It beats
+  the tuned random forest on val by 18.4 points of foreground macro IoU
+  (paired block interval 11.9 to 25.2).
+
+model:
+  kind: segformer
+  checkpoint: segformer-b0-ce  # run folder in the attached checkpoints dataset
+  mlflow_run_id: abacd4867a7a4197bd95d5d03223b5c8
+  sha256: 7be82fdedc06a978ced8b3ef3cdf53461f5e60bbe462fbbeb63c8e2aa4046756
+  preprocessing_version: pp-1
+  # Val foreground macro IoU at the declared temperature (Kaggle CPU, commit 25451a5).
+  # The session re-scores val and must reproduce it.
+  val_foreground_macro_iou: 0.3185608031587942
+
+calibration:
+  fit_scope: all  # docs/evaluation.md: the only scope improving NLL and both ECEs on val
+  temperature: 1.04  # fitted on the calibration split; the session refits and must match
+
+review_policy_version: review-policy-1  # design defaults, not tuned (docs/model_card.md)
+
+# Frozen reference baselines, scored on test next to the release.
+baselines:
+  random_forest:
+    # rf-tuning-1 selection (forest1-prior0). Refitted in the session from these
+    # settings; the refit must reproduce its val score before it is scored on test.
+    pixels_per_class: 600
+    prior_power: 0.0
+    val_foreground_macro_iou: 0.1347696947988463
+
+# Each is scored once on the locked test split. The uncalibrated run gives
+# calibration before and after; its IoU and coverage equal the release's.
+test_evaluations:
+  - release  # declared temperature
+  - release-uncalibrated  # temperature 1
+  - all-background
+  - random-forest
+test_comparisons:  # paired bootstrap, A - B
+  - [release, random-forest]
+  - [release, all-background]
+
+# Proposed targets (CLAUDE.md, docs/evaluation.md), reported on test as met or
+# missed. Val status at declaration: RF margin met, 0.40 missed, coverage MAE met
+# (4.43 pp), review workload about random (missed).
+targets:
+  margin_over_random_forest: 0.05
+  foreground_macro_iou: 0.40
+  coverage_mae_pp: 5.0
