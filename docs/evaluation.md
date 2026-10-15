@@ -124,7 +124,10 @@ coverage_c = pixels labelled c inside the inspection region
   (`confusions.npz`), and `scripts/compare.py <report A> <report B>` computes
   the intervals for `A - B` on foreground macro IoU and each target class's
   IoU, under both group definitions. It refuses reports from different
-  splits, split manifests, or image sets.
+  splits, split manifests, or image sets. With `--a` and `--b`, each side is
+  several reports (for example one per training seed), and the difference
+  is between their means; every resample applies the same groups to all of
+  them.
 - The test split covers only five sequences, so sequence-level intervals are
   wide. Time-block groups give narrower intervals but assume more
   independence than the data guarantees. Both are reported.

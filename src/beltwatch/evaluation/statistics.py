@@ -96,18 +96,55 @@ def paired_bootstrap_difference(
     seed: int = 0,
 ) -> Interval:
     """CI for ``metric(A) - metric(B)`` on the same images, resampling groups jointly."""
-    if per_image_a.shape != per_image_b.shape or len(per_image_a) != len(groups):
-        raise ValueError("both models must be evaluated on the same images and groups")
-    sums_a, k = _group_sums(per_image_a, groups)
-    sums_b, _ = _group_sums(per_image_b, groups)
+    return paired_bootstrap_mean_difference(
+        [per_image_a],
+        [per_image_b],
+        groups,
+        metric,
+        n_resamples=n_resamples,
+        confidence=confidence,
+        seed=seed,
+    )
+
+
+def paired_bootstrap_mean_difference(
+    runs_a: Sequence[npt.NDArray[np.int64]],
+    runs_b: Sequence[npt.NDArray[np.int64]],
+    groups: Sequence[str],
+    metric: MetricFn,
+    *,
+    n_resamples: int = 2000,
+    confidence: float = 0.95,
+    seed: int = 0,
+) -> Interval:
+    """CI for the mean of ``metric`` over runs A minus the mean over runs B.
+
+    Each run (for example one training seed) is a per-image confusion array on
+    the same images. Every resample draws one set of groups and applies it to
+    all runs on both sides, so the interval covers the variation between images
+    for the seed-averaged difference. With one run per side this is
+    :func:`paired_bootstrap_difference`.
+    """
+    runs = [*runs_a, *runs_b]
+    if not runs_a or not runs_b:
+        raise ValueError("each side needs at least one run")
+    if any(r.shape != runs[0].shape for r in runs) or len(runs[0]) != len(groups):
+        raise ValueError("every run must be evaluated on the same images and groups")
+    sums_a = [_group_sums(r, groups)[0] for r in runs_a]
+    sums_b = [_group_sums(r, groups)[0] for r in runs_b]
+    k = len(sums_a[0])
+
+    def mean_difference(pick: npt.NDArray[np.intp] | slice) -> float:
+        mean_a = np.mean([metric(s[pick].sum(axis=0)) for s in sums_a])
+        mean_b = np.mean([metric(s[pick].sum(axis=0)) for s in sums_b])
+        return float(mean_a - mean_b)
+
     rng = np.random.default_rng(seed)
     draws = rng.integers(0, k, size=(n_resamples, k))
-    values = np.array(
-        [metric(sums_a[d].sum(axis=0)) - metric(sums_b[d].sum(axis=0)) for d in draws]
-    )
+    values = np.array([mean_difference(d) for d in draws])
     alpha = (1 - confidence) / 2
     return Interval(
-        metric(sums_a.sum(axis=0)) - metric(sums_b.sum(axis=0)),
+        mean_difference(slice(None)),
         float(np.nanquantile(values, alpha)),
         float(np.nanquantile(values, 1 - alpha)),
         k,
