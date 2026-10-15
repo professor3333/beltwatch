@@ -122,6 +122,28 @@ A release is an immutable bundle containing:
 
 It is promoted with a recorded reason and the version it replaces.
 Thresholds and temperatures are chosen on val or calibration, never on test.
+
+Before the locked test split is read, the release is **declared** in
+`configs/releases/<version>.yaml`. The declaration fixes:
+
+- the weights' SHA-256 and MLflow run
+- the temperature and its fit scope
+- the review policy and preprocessing versions
+- the frozen baselines scored next to the release
+- the val scores the release session must reproduce
+- the test evaluations and comparisons
+
+The notebook's `release` mode builds the bundle and checks each step against
+the declaration (`python -m beltwatch.release.declaration`). It also checks
+runtime parity: the bundle as served and the checkpoint as evaluated must
+give the same probabilities (`python -m beltwatch.release.parity`). Only
+then does it score the test split, once. A completed test run is recorded in
+`complete.json`, and a second one for the same release is refused.
+
+The first declared release is `beltwatch-0.1.0`: SegFormer-B0, the seed-0
+run of the finalist configuration, at T = 1.04. Its review policy,
+`review-policy-1`, holds design defaults that were not tuned on val. The
+test result is *pending*.
 A temperature that worsens foreground ECE is refused unless explicitly
 allowed. Rollback restores the complete bundle. See
 [operations.md](operations.md).

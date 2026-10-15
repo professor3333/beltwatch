@@ -138,6 +138,29 @@ Each benchmark records the session's hardware. Kaggle's CPU session has 4
 cores but more than 8 GB of RAM, so memory is measured as peak RSS, not
 enforced. The error reports contain ZeroWaste frames, so keep them out of git.
 
+`MODEL = "release"` also runs on a CPU session, with the same attached
+dataset. It builds the release declared in `RELEASE`
+(`configs/releases/beltwatch-0.1.0.yaml`) and checks every step against the
+declaration. Any failed check stops the session before the test split is
+read. The steps:
+
+1. Checks that the attached checkpoint is the declared weights.
+2. Refits the temperature on the calibration split.
+3. Re-scores val at that temperature. Steps 2 and 3 must reproduce the
+   declared values.
+4. Builds the bundle (unactivated) and checks runtime parity.
+5. Benchmarks the bundle.
+6. Refits the declared random forest. If it does not reproduce its val
+   score, it is left out of the test split and reported as left out.
+7. Scores the declared test evaluations with `--declared-release` and
+   compares them.
+
+It takes about 1 hour of data preparation, then about 3 hours, mostly the
+forest refit. A session that stops during step 7 can be resumed by attaching
+its output. It then finishes only the declared evaluations that are missing.
+After `complete.json` is written, the test split is not scored again for
+that release.
+
 After `dvc repro`, the notebook checks the rebuilt dataset-version files
 against the commit. If only the download time in
 `zerowaste-f-download.json` differs (and the `dvc.lock` hash that follows
