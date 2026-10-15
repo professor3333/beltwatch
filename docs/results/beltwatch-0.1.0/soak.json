@@ -1,0 +1,42 @@
+{
+  "model_version": "beltwatch-0.1.0",
+  "audits": 200,
+  "by_status": {
+    "complete": 200
+  },
+  "image_errors": {},
+  "success_rate": 1.0,
+  "problems": [],
+  "database_checks": {
+    "audits_without_exactly_one_image": 0,
+    "pending_images_in_finished_audits": 0,
+    "duplicate_artifacts": 0,
+    "complete_images_without_worker_artifacts": 0
+  },
+  "idempotent_replays": {
+    "sent": 20,
+    "same_audit": 20
+  },
+  "create_retries": 0,
+  "worker_kills": 13,
+  "audits_claimed_more_than_once": 12,
+  "seconds_to_finish": {
+    "p50": 9.659474374959245,
+    "p95": 24.945267125032842
+  },
+  "wall_seconds": 196.7,
+  "audits_per_second": 1.0166210260424835,
+  "in_flight": 10,
+  "host": {
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "cpu_count": 8
+  },
+  "targets": {
+    "success_rate": 0.99,
+    "duplicate_completions": 0
+  },
+  "meets_targets": {
+    "success_rate": true,
+    "duplicate_completions": true
+  }
+}

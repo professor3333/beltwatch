@@ -94,6 +94,47 @@ Drift signals are prompts to investigate, not proof that accuracy has fallen.
 Retrain only after a verified data or performance problem. Random audits of
 low-risk images keep monitoring from seeing only flagged cases.
 
+## Reliability soak test
+
+`scripts/soak_test.py` (standard library only) submits many single-image
+audits to a running service. Each audit gets its own inspection region, so
+none is served from the result cache, and at most `--in-flight` are
+unfinished at a time. With `--worker-command` it runs the worker itself and
+kills its whole process group with SIGKILL every `--kill-every` seconds,
+restarting it at once. Each kill leaves a claimed audit behind, and that
+audit must be picked up again after its lease expires. Every tenth request
+is sent twice with the same Idempotency-Key and must return the same audit.
+
+When all audits have finished, the script checks each one: final status,
+exactly one image result, a retrievable overlay, and a report with one row.
+With `--database` it also checks the job store's rows (read-only): one image
+per audit, no pending image in a finished audit, no duplicate artifacts, and
+all three artifacts for every complete image. It exits non-zero unless at
+least 99% of audits complete and no duplicate is found.
+
+```bash
+export BELTWATCH_DATA_DIR=var BELTWATCH_RELEASES_DIR=model_releases BELTWATCH_LEASE_SECONDS=20
+uv run uvicorn beltwatch.api.app:create_app --factory --port 8000 &
+python3 scripts/soak_test.py --audits 200 --images frames/*.png \
+    --worker-command "uv run python -m beltwatch.jobs.worker" --kill-every 15 \
+    --database var/beltwatch.sqlite3 --out soak.json
+```
+
+**Result for `beltwatch-0.1.0`** (2026-10-16, 4 val frames, Apple M1 with 8
+cores and 8 GB, lease 20 s, 10 audits in flight;
+[`soak.json`](results/beltwatch-0.1.0/soak.json)):
+
+- all 200 audits complete, with no image errors
+- 13 worker kills; 12 audits were claimed again after a lost lease, and each
+  completed once
+- no duplicate results or artifacts in the API or the database
+- 20 of 20 repeated requests returned the same audit
+- submission to completion took 9.7 s at p50 and 24.9 s at p95, which
+  includes the 20 s lease wait after each kill (1.02 audits/s overall)
+
+This is a development machine, not the 4 vCPU / 8 GB target, and the run
+used a lease far shorter than the 120 s default to make recovery quick.
+
 ## Known trade-offs
 
 - A single host means downtime during host maintenance. There is no high
