@@ -4,7 +4,8 @@ The JSON outputs of the release session for `beltwatch-0.1.0`, as declared in
 [`configs/releases/beltwatch-0.1.0.yaml`](../../../configs/releases/beltwatch-0.1.0.yaml).
 They were produced by the Kaggle notebook's `release` mode on a CPU session
 (2026-10-15) at commit `1c2e080`, without local modifications, and are copied
-here unchanged. The numbers in the README and the [model card](../../model_card.md)
+here unchanged. `soak.json` is the exception: it was produced later, on a
+local machine, against the same bundle. The numbers in the README and the [model card](../../model_card.md)
 come from these files. `tests/unit/test_release_declaration.py` checks them
 against the declaration.
 
@@ -19,6 +20,7 @@ against the declaration.
 | `test/release-uncalibrated.json` | The same weights at temperature 1 (calibration before/after) |
 | `test/all-background.json`, `test/random-forest.json` | Reference baselines on test |
 | `test/compare-release-vs-*.json` | Paired bootstrap differences over recording groups |
+| `soak.json` | Reliability soak test of the bundle: 200 audits with worker kills (Apple M1, local; [operations.md](../../operations.md#reliability-soak-test)) |
 | `test/complete.json` | Marks the test run complete; the test split is not scored again for this release |
 
 Per-image tables, confusion matrices, weights and the forest are not

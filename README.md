@@ -20,7 +20,7 @@ Semantic segmentation · visible-coverage estimation · uncertainty-aware review
 > split: foreground macro IoU **0.336**, 18.4 points above the tuned random
 > forest. It **misses** the proposed 0.40 target and the review-workload
 > target. See [Results](#results). The pipeline, the audit service and the
-> deployment are built and tested (296 tests).
+> deployment are built and tested (299 tests).
 
 ## Architecture
 
@@ -166,6 +166,7 @@ bootstrap over the 5 test recording sequences.
 | Recall vs workload clearly better than random | **Missed:** not demonstrable at 89.7% prevalence |
 | Seed spread ≤ 2 points | **Met:** 0.29 points over 3 seeds (val) |
 | p95 ≤ 3 s, ≥ 0.5 images/s, ≤ 2 GB | **Met** on Kaggle; not yet measured on the documented host |
+| ≥ 99% of 200 jobs succeed, no duplicate completions | **Met:** 200 of 200, with the worker killed 13 times ([soak test](docs/operations.md#reliability-soak-test); local M1 Mac, not the documented host) |
 
 ## Tech stack
 
@@ -338,7 +339,9 @@ python3 scripts/deploy_smoke.py --base-url https://localhost --insecure --expect
 ```
 
 The release, rollback, backup, and monitoring procedures are in
-[`docs/operations.md`](docs/operations.md). CI builds the image and performs a
+[`docs/operations.md`](docs/operations.md), together with a reliability soak
+test (`scripts/soak_test.py`) that submits many audits while killing and
+restarting the worker. CI builds the image and performs a
 real deployment, release switch, and rollback on every change to the serving
 code.
 
@@ -388,6 +391,7 @@ src/beltwatch/release/   Versioned, checksummed release bundles, declarations, a
 frontend/                Review UI (static HTML/CSS/JS, no external dependencies)
 Dockerfile, compose.yaml, docker/   Serving image, Compose stack, Caddy and Prometheus config
 scripts/deploy_smoke.py  Deployment smoke test (standard library only)
+scripts/soak_test.py     Reliability soak test: many audits, worker kills, duplicate checks
 configs/review_policy.yaml  Versioned review thresholds
 configs/releases/        Release declarations, committed before the test split is read
 docs/results/            Recorded outputs of each declared release's session
