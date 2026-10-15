@@ -179,3 +179,66 @@ images per second target; SegFormer meets it narrowly. The artifact PNGs are
 now encoded at zlib level 3, which on full-size val frames encoded the
 overlay about 2.3× faster for a file about 7% larger. The effect on Kaggle is
 not yet measured.
+
+### 2026-10-15: first experiment round, SegFormer-B0, val (370 images)
+
+Four runs from `configs/experiments/` (docs/training.md §6), each the
+baseline with one change, trained in one Kaggle GPU session at commit
+`2112fc1` (clean) and scored on val on the CPU at the same commit. The
+baseline is run `abacd486` (seed 0, weights `7be82fde…`), re-scored at
+`2112fc1` with the same result as before. Each run's best epoch was selected
+on val, so every number here is optimistic in the same way. Weight digests
+match the `best_checkpoint_sha256` tags in MLflow.
+
+| Run | Best epoch | Foreground macro IoU (block CI) | Cardboard | Soft plastic | Rigid plastic | Metal | Coverage MAE (bias), pp |
+|---|---|---|---|---|---|---|---|
+| baseline, seed 0 | 6 | 0.3186 (0.246–0.394) | 0.517 | 0.456 | 0.129 | 0.173 | 4.43 (−2.34) |
+| seed 1 | 19 | 0.3198 (0.256–0.383) | 0.521 | 0.494 | 0.111 | 0.153 | 4.63 (−2.83) |
+| CE + Dice | 5 | 0.3309 (0.277–0.385) | 0.482 | 0.430 | 0.252 | 0.161 | 4.95 (−3.47) |
+| material-aware crops | 6 | 0.3145 (0.246–0.385) | 0.498 | 0.451 | 0.148 | 0.162 | 4.89 (−3.11) |
+| class weights | 13 | 0.3462 (0.292–0.400) | 0.528 | 0.484 | 0.229 | 0.143 | 3.99 (+0.95) |
+
+Paired differences from the seed-0 baseline (paired bootstrap over 1000-frame
+blocks, 31 groups; the sequence-level intervals have too few groups, 4):
+
+| Run | Foreground macro IoU | Rigid plastic | Metal |
+|---|---|---|---|
+| seed 1 | +0.0013 (−0.018 to +0.020) | −0.018 (−0.042 to +0.019) | −0.020 (−0.080 to +0.057) |
+| CE + Dice | +0.0123 (−0.020 to +0.033) | +0.122 (+0.026 to +0.183) | −0.012 (−0.048 to +0.015) |
+| material-aware crops | −0.0040 (−0.015 to +0.002) | +0.019 (−0.009 to +0.030) | −0.011 (−0.031 to +0.013) |
+| class weights | +0.0277 (−0.001 to +0.049) | +0.100 (+0.027 to +0.146) | −0.030 (−0.063 to +0.008) |
+
+Where rigid plastic and metal pixels go (share of ground-truth pixels):
+
+| Run | Rigid → soft plastic | Rigid correct | Metal → background | Metal → rigid plastic | Metal correct | Background → cardboard |
+|---|---|---|---|---|---|---|
+| baseline, seed 0 | 0.483 | 0.140 | 0.706 | 0.032 | 0.224 | 0.033 |
+| seed 1 | 0.514 | 0.119 | 0.616 | 0.113 | 0.162 | 0.029 |
+| CE + Dice | 0.291 | 0.340 | 0.670 | 0.072 | 0.229 | 0.028 |
+| material-aware crops | 0.420 | 0.171 | 0.719 | 0.028 | 0.203 | 0.030 |
+| class weights | 0.377 | 0.330 | 0.321 | 0.360 | 0.200 | 0.046 |
+
+1. **No change is adopted under the declared rule.** Seeds 0 and 1 differ by
+   0.0013. Class weights gain 2.77 points, which clears the 2-point and
+   seed-spread conditions, but the block interval reaches −0.001, so it
+   fails the third condition, narrowly. CE + Dice gains 1.2 points and
+   material-aware crops lose 0.4; both fail. The rule's outcome stands: the
+   baseline configuration is the finalist.
+2. **Two changes help rigid plastic, the first diagnosed failure.** CE +
+   Dice and class weights raise rigid-plastic IoU by 12 and 10 points
+   with intervals above 0, mostly by sending fewer rigid pixels to soft
+   plastic. CE + Dice pays for it with cardboard (−3.5) and soft plastic
+   (−2.6), both with intervals below 0. Material-aware crops barely move it.
+3. **Metal, the second diagnosed failure, did not improve.** No run raises
+   metal IoU. Class weights cut the metal pixels missed as background from
+   0.71 to 0.32, but most of them become rigid plastic instead, and metal
+   precision falls (0.43 → 0.34).
+4. **Class weights move coverage from an underestimate to a slight
+   overestimate** (bias −2.34 → +0.95 pp, MAE 4.43 → 3.99). They also predict
+   more cardboard on background (3.3% → 4.6% of background pixels), and
+   uncalibrated NLL is worse (0.284 → 0.316).
+5. **One seed pair understates the noise.** The two baseline seeds end
+   within 0.13 points of each other, but seed 1's val score moves by up to
+   2.6 points from one epoch to the next (seed 0 ranged 0.267–0.319 over
+   epochs 5–14), and their best epochs differ (6 and 19). The 2-point floor
+   in the rule matters more than the measured seed spread.

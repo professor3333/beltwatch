@@ -197,6 +197,12 @@ each with the baseline run (seed 0) by paired bootstrap.
 4. Every experiment's per-class IoU (rigid plastic and metal in particular)
    and coverage MAE are reported, whether it is adopted or not.
 
+**Result (2026-10-15, docs/error_analysis.md):** no change was adopted.
+Seeds 0 and 1 differ by 0.0013. Class weights gained 2.77 points, but the
+block interval reached −0.001, so they failed the third condition. CE +
+Dice gained 1.2 points and material-aware crops lost 0.4. The baseline
+configuration is the finalist.
+
 Each run's best epoch is chosen on val, so every val number here is
 optimistic in the same way. Only the declared release is scored on the test
 split, once. Inference resolution is not part of this round, because a new
