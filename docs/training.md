@@ -229,6 +229,13 @@ case), `segformer-b0-ce-classweights-seed1` and
    seed is picked on val.
 4. Per-class IoU and coverage MAE are reported for every run.
 
+**Result (2026-10-15, docs/error_analysis.md):** class weights were not
+adopted. Over seeds 1 and 2 they gained 2.32 points, above the 2-point floor
+and the baseline's seed range (0.29 points), but the block interval reached
+−0.004, so the third condition failed. The baseline configuration is the
+finalist: 0.3200 mean val foreground macro IoU over seeds 0, 1 and 2, range
+0.29 points. The release candidate is its seed-0 run (`abacd486`).
+
 Each run's best epoch is chosen on val, so every val number here is
 optimistic in the same way. Only the declared release is scored on the test
 split, once. Inference resolution is not part of this round, because a new

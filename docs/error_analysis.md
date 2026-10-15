@@ -242,3 +242,54 @@ Where rigid plastic and metal pixels go (share of ground-truth pixels):
    2.6 points from one epoch to the next (seed 0 ranged 0.267–0.319 over
    epochs 5–14), and their best epochs differ (6 and 19). The 2-point floor
    in the rule matters more than the measured seed spread.
+
+### 2026-10-15: round 2, confirmation of class weights, val (370 images)
+
+Three runs trained in one Kaggle GPU session at commit `9addddd` (clean) and
+scored on val on the CPU at the same commit: the baseline's seed 2 and seeds
+1 and 2 of class weights. Configs match the declared ones after validation,
+and weight digests match MLflow. The rule was declared before the runs
+(docs/training.md §6, round 2).
+
+| Run | Best epoch | Foreground macro IoU (block CI) | Cardboard | Soft plastic | Rigid plastic | Metal | Coverage MAE (bias), pp |
+|---|---|---|---|---|---|---|---|
+| baseline, seed 0 | 6 | 0.3186 (0.246–0.394) | 0.517 | 0.456 | 0.129 | 0.173 | 4.43 (−2.34) |
+| baseline, seed 1 | 19 | 0.3198 (0.256–0.383) | 0.521 | 0.494 | 0.111 | 0.153 | 4.63 (−2.83) |
+| baseline, seed 2 | 16 | 0.3215 (0.259–0.387) | 0.483 | 0.492 | 0.170 | 0.140 | 5.38 (−4.38) |
+| class weights, seed 0 (round 1) | 13 | 0.3462 (0.292–0.400) | 0.528 | 0.484 | 0.229 | 0.143 | 3.99 (+0.95) |
+| class weights, seed 1 | 19 | 0.3347 (0.267–0.399) | 0.529 | 0.479 | 0.165 | 0.165 | 4.05 (+1.67) |
+| class weights, seed 2 | 20 | 0.3530 (0.289–0.412) | 0.535 | 0.480 | 0.214 | 0.183 | 3.93 (+0.35) |
+
+Mean over seeds 1 and 2, class weights minus baseline (paired bootstrap
+over 1000-frame blocks, 31 groups, every resample applied to all four runs;
+the sequence-level intervals have too few groups, 4):
+
+| Metric | Difference (95% interval) |
+|---|---|
+| Foreground macro IoU | +0.0232 (−0.0037 to +0.0315) |
+| Cardboard | +0.030 (+0.016 to +0.048) |
+| Soft plastic | −0.013 (−0.027 to +0.003) |
+| Rigid plastic | +0.049 (+0.010 to +0.071) |
+| Metal | +0.027 (−0.065 to +0.054) |
+
+1. **Class weights are not adopted.** The gain of 2.32 points exceeds the
+   2-point floor and the range of the baseline's three seeds (0.29 points),
+   but the block interval reaches −0.004, so the third condition fails, as
+   it did in round 1. Under the declared rule this was the only follow-up,
+   so **the baseline configuration is the finalist** and no further class-
+   weight runs are made in this round of experiments.
+2. **The finalist over three seeds:** foreground macro IoU 0.3200 on
+   average, range 0.29 points (within the proposed 2-point seed spread).
+   Cardboard 0.507, soft plastic 0.481, rigid plastic 0.137, metal 0.155
+   (means). Coverage MAE 4.81 pp on average; seed 2 is above the proposed
+   5-point target (5.38, bias −4.38). The release candidate is the seed-0
+   run, as declared: 0.3186, coverage MAE 4.43.
+3. **What the interval does and does not say.** All three class-weight
+   seeds score above all three baseline seeds (0.335–0.353 against
+   0.319–0.322), so the gain is not seed luck. The interval covers the other
+   source of chance, which val images are drawn, and with 31 blocks that
+   variation is too large to separate a gain of this size from 0 at 95%.
+   This is recorded as a measured near miss, not as an effect.
+4. **Rigid plastic stays the clearest per-class effect** of class weights
+   (+0.049, interval above 0), together with cardboard (+0.030). Metal
+   remains weak in every run (0.14–0.18).
