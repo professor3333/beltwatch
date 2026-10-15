@@ -165,6 +165,25 @@ def test_paired_difference_detects_consistent_improvement() -> None:
     assert diff.low > 0
 
 
+def test_mean_difference_over_runs() -> None:
+    better = per_image_conf([(1, 1)] * 16 + [(0, 1)] * 4)
+    worse = per_image_conf([(1, 1)] * 8 + [(0, 1)] * 12)
+    middle = per_image_conf([(1, 1)] * 12 + [(0, 1)] * 8)
+    groups = [f"g{i % 10}" for i in range(20)]
+    fn = seg.foreground_macro_iou
+
+    single = st.paired_bootstrap_difference(better, worse, groups, fn, n_resamples=200)
+    as_runs = st.paired_bootstrap_mean_difference([better], [worse], groups, fn, n_resamples=200)
+    averaged = st.paired_bootstrap_mean_difference(
+        [better, middle], [worse, worse], groups, fn, n_resamples=200
+    )
+
+    assert as_runs == single
+    assert averaged.estimate == pytest.approx((0.8 + 0.6) / 2 - 0.4)
+    with pytest.raises(ValueError, match="same images"):
+        st.paired_bootstrap_mean_difference([better], [worse[:5]], groups, fn)
+
+
 def test_bootstrap_requires_matching_groups() -> None:
     with pytest.raises(ValueError, match="group"):
         st.bootstrap_metric(per_image_conf([(1, 1)]), ["a", "b"], seg.foreground_macro_iou)

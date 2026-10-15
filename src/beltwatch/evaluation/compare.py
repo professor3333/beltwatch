@@ -14,15 +14,23 @@ The result is written next to the reports as
 ``compare-<A>-vs-<B>-<split>.json``. Intervals over fewer than
 :data:`~beltwatch.evaluation.runner.MIN_GROUPS_FOR_INTERVAL` groups are flagged
 ``too_few_groups``.
+
+Several reports per side (for example one per training seed) compare the
+seed-averaged metrics, with every resample applied to all of them::
+
+    uv run python scripts/compare.py --a reports/x-seed1 reports/x-seed2 \
+        --b reports/base-seed1 reports/base-seed2 --out reports/compare-x.json
 """
 
 import argparse
 import json
 import math
 import warnings
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any
+
+import numpy as np
 
 from beltwatch.evaluation.runner import MIN_GROUPS_FOR_INTERVAL, load_confusions
 from beltwatch.evaluation.segmentation import (
@@ -30,7 +38,7 @@ from beltwatch.evaluation.segmentation import (
     foreground_macro_iou,
     metrics_from_confusion,
 )
-from beltwatch.evaluation.statistics import paired_bootstrap_difference
+from beltwatch.evaluation.statistics import paired_bootstrap_mean_difference
 from beltwatch.labels import CLASS_NAMES, TARGET_CLASS_IDS
 
 MATCHED_FIELDS = ("split", "split_manifest_id", "n_images", "limited_to")
@@ -66,17 +74,30 @@ def _load(report_dir: Path) -> tuple[dict[str, Any], Any]:
     return report, saved
 
 
-def compare_reports(dir_a: Path, dir_b: Path, *, n_resamples: int = 2000) -> dict[str, Any]:
-    """Paired-bootstrap intervals for ``A - B`` on foreground macro IoU and per-class IoU."""
-    report_a, saved_a = _load(dir_a)
-    report_b, saved_b = _load(dir_b)
-    for field in MATCHED_FIELDS:
-        if report_a.get(field) != report_b.get(field):
-            raise ValueError(
-                f"reports differ in {field}: {report_a.get(field)!r} != {report_b.get(field)!r}"
-            )
-    if saved_a.image_ids != saved_b.image_ids:
-        raise ValueError("reports were computed on different images or in a different order")
+def compare_reports(
+    dir_a: Path | Sequence[Path], dir_b: Path | Sequence[Path], *, n_resamples: int = 2000
+) -> dict[str, Any]:
+    """Paired-bootstrap intervals for ``A - B`` on foreground macro IoU and per-class IoU.
+
+    A side given as several report directories is the mean over them (for
+    example over training seeds); a side given as one directory is that report.
+    """
+    dirs_a = [dir_a] if isinstance(dir_a, Path) else list(dir_a)
+    dirs_b = [dir_b] if isinstance(dir_b, Path) else list(dir_b)
+    if not dirs_a or not dirs_b:
+        raise ValueError("each side needs at least one report")
+    loaded_a = [_load(d) for d in dirs_a]
+    loaded_b = [_load(d) for d in dirs_b]
+    first_report, first_saved = loaded_a[0]
+    for report, saved in [*loaded_a[1:], *loaded_b]:
+        for field in MATCHED_FIELDS:
+            if first_report.get(field) != report.get(field):
+                raise ValueError(
+                    f"reports differ in {field}: "
+                    f"{first_report.get(field)!r} != {report.get(field)!r}"
+                )
+        if saved.image_ids != first_saved.image_ids:
+            raise ValueError("reports were computed on different images or in a different order")
 
     metrics: dict[str, Callable[[Confusion], float]] = {
         "foreground_macro_iou": foreground_macro_iou
@@ -86,12 +107,16 @@ def compare_reports(dir_a: Path, dir_b: Path, *, n_resamples: int = 2000) -> dic
     differences: dict[str, dict[str, Any]] = {}
     for metric_name, fn in metrics.items():
         differences[metric_name] = {}
-        for group_name, labels in saved_a.groups().items():
+        for group_name, labels in first_saved.groups().items():
             with warnings.catch_warnings():
                 # A class absent from both models and the ground truth is reported as undefined.
                 warnings.filterwarnings("ignore", "All-NaN slice", RuntimeWarning)
-                interval = paired_bootstrap_difference(
-                    saved_a.confusions, saved_b.confusions, labels, fn, n_resamples=n_resamples
+                interval = paired_bootstrap_mean_difference(
+                    [saved.confusions for _, saved in loaded_a],
+                    [saved.confusions for _, saved in loaded_b],
+                    labels,
+                    fn,
+                    n_resamples=n_resamples,
                 )
             fields = interval.as_dict()
             differences[metric_name][group_name] = {
@@ -110,10 +135,31 @@ def compare_reports(dir_a: Path, dir_b: Path, *, n_resamples: int = 2000) -> dic
             "iou": {CLASS_NAMES[c]: seg["iou"][CLASS_NAMES[c]] for c in TARGET_CLASS_IDS},
         }
 
+    def side(loaded: list[tuple[dict[str, Any], Any]], dirs: list[Path]) -> dict[str, Any]:
+        summaries = [summary(report, d) for (report, _), d in zip(loaded, dirs, strict=True)]
+        if len(summaries) == 1:
+            return summaries[0]
+        names = ["foreground_macro_iou", *summaries[0]["iou"]]
+        values = {
+            name: [s[name] if name in s else s["iou"][name] for s in summaries] for name in names
+        }
+
+        def mean(name: str) -> float | None:  # undefined (null) in any report: undefined
+            v = values[name]
+            return None if any(x is None for x in v) else float(np.mean(v))
+
+        return {
+            "model": summaries[0]["model"],
+            "mean_over_reports": len(summaries),
+            "foreground_macro_iou": mean("foreground_macro_iou"),
+            "iou": {name: mean(name) for name in names[1:]},
+            "reports": summaries,
+        }
+
     return {
-        "a": summary(report_a, dir_a),
-        "b": summary(report_b, dir_b),
-        **{field: report_a.get(field) for field in MATCHED_FIELDS},
+        "a": side(loaded_a, dirs_a),
+        "b": side(loaded_b, dirs_b),
+        **{field: first_report.get(field) for field in MATCHED_FIELDS},
         "difference_a_minus_b": differences,
         "note": "paired bootstrap over recording groups; both models resampled on the same groups",
     }
@@ -121,14 +167,28 @@ def compare_reports(dir_a: Path, dir_b: Path, *, n_resamples: int = 2000) -> dic
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Compare two evaluation reports (A - B).")
-    parser.add_argument("report_a", type=Path, help="report directory of model A")
-    parser.add_argument("report_b", type=Path, help="report directory of model B")
+    parser.add_argument("report_a", type=Path, nargs="?", help="report directory of model A")
+    parser.add_argument("report_b", type=Path, nargs="?", help="report directory of model B")
+    parser.add_argument(
+        "--a", type=Path, nargs="+", dest="set_a", help="several reports of A, averaged (seeds)"
+    )
+    parser.add_argument(
+        "--b", type=Path, nargs="+", dest="set_b", help="several reports of B, averaged (seeds)"
+    )
     parser.add_argument("--out", type=Path, help="output JSON (default: next to the reports)")
     parser.add_argument("--n-resamples", type=int, default=2000)
     args = parser.parse_args(argv)
 
-    result = compare_reports(args.report_a, args.report_b, n_resamples=args.n_resamples)
-    out = args.out or args.report_a.parent / (
+    if args.set_a or args.set_b:
+        if not (args.set_a and args.set_b) or args.report_a or args.report_b:
+            parser.error("use --a and --b together, instead of the two positional reports")
+        dirs_a, dirs_b = args.set_a, args.set_b
+    elif args.report_a and args.report_b:
+        dirs_a, dirs_b = [args.report_a], [args.report_b]
+    else:
+        parser.error("give two report directories, or --a and --b")
+    result = compare_reports(dirs_a, dirs_b, n_resamples=args.n_resamples)
+    out = args.out or dirs_a[0].parent / (
         f"compare-{result['a']['model']}-vs-{result['b']['model']}-{result['split']}.json"
     )
     out.write_text(json.dumps(result, indent=2) + "\n")

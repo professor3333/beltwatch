@@ -58,6 +58,22 @@ def test_paired_difference_between_two_reports(images: Images, tmp_path: Path) -
     json.dumps(result, allow_nan=False)
 
 
+def test_seed_averaged_difference(images: Images, tmp_path: Path) -> None:
+    samples, masks = images
+    oracle = write_report(Oracle(masks), samples, tmp_path / "oracle-val")
+    background = write_report(AllBackground(), samples, tmp_path / "all-background-val")
+
+    result = compare.compare_reports([oracle, background], [background], n_resamples=50)
+
+    assert result["a"]["mean_over_reports"] == 2
+    assert result["a"]["foreground_macro_iou"] == pytest.approx(0.5)
+    assert len(result["a"]["reports"]) == 2 and result["b"]["model"] == "all-background"
+    assert result["a"]["iou"]["metal"] is None  # absent: undefined, not averaged
+    by_sequence = result["difference_a_minus_b"]["foreground_macro_iou"]["groups_by_sequence"]
+    assert by_sequence["estimate"] == pytest.approx(0.5)
+    json.dumps(result, allow_nan=False)
+
+
 def test_reports_must_match(images: Images, tmp_path: Path) -> None:
     samples, masks = images
     a = write_report(Oracle(masks), samples, tmp_path / "a")

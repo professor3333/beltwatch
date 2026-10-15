@@ -178,10 +178,11 @@ test enforces that nothing else differs.
 | `segformer-b0-ce-material` | `augment.material_crop_prob: 0.5` | sampling: half the crops contain a material, chosen uniformly among the materials in the image |
 | `segformer-b0-ce-classweights` | class weights 1, 2.8, 4, 10, 10 | restrained weighting: square root of the background-to-class pixel ratio on train, capped at 10 |
 | `segformer-b0-ce-seed2` | seed 2 | third seed of the finalist, if the baseline stays the finalist |
+| `segformer-b0-ce-classweights-seed1`, `-seed2` | class weights, seeds 1 and 2 | round 2: confirmation of the class-weight near miss (below) |
 
-`MODEL = "experiments"` in `notebooks/train_kaggle.ipynb` trains the first
-four in one GPU session (about 9 hours), evaluates each on val, and compares
-each with the baseline run (seed 0) by paired bootstrap.
+`MODEL = "experiments"` in `notebooks/train_kaggle.ipynb` trains one round in
+one GPU session, evaluates each run on val, and compares each with the
+baseline run (seed 0) by paired bootstrap. Round 1 was the first four rows.
 
 **Adoption rule** (declared on 2026-10-14, before these runs):
 
@@ -202,6 +203,31 @@ Seeds 0 and 1 differ by 0.0013. Class weights gained 2.77 points, but the
 block interval reached −0.001, so they failed the third condition. CE +
 Dice gained 1.2 points and material-aware crops lost 0.4. The baseline
 configuration is the finalist.
+
+**Round 2: one confirmation of class weights** (declared on 2026-10-15,
+after round 1 and before these runs). Class weights missed the round-1 rule
+only on the interval, and they target the first diagnosed failure (rigid
+plastic IoU +10 points, interval above 0). The round-1 run was singled out
+because it scored high, so the confirmation uses fresh seeds only: seeds 1
+and 2 of class weights against seeds 1 and 2 of the baseline. The session
+trains `segformer-b0-ce-seed2` (needed for the finalist's three seeds in any
+case), `segformer-b0-ce-classweights-seed1` and
+`segformer-b0-ce-classweights-seed2`.
+
+1. Class weights are adopted only if all three hold for val foreground
+   macro IoU, averaged over seeds 1 and 2 of each configuration: the gain
+   exceeds 2 points, it exceeds the range (largest minus smallest) of the
+   baseline's three seeds, and the paired-bootstrap interval over
+   1000-frame blocks lies above 0. The interval applies each resample to
+   all four runs (`scripts/compare.py --a <class weights seeds 1, 2> --b
+   <baseline seeds 1, 2>`).
+2. This is the only follow-up for class weights. If it fails, the baseline
+   configuration stays the finalist, and round 1's result is reported as it
+   was, whatever round 2 shows.
+3. The finalist is reported as the mean and range over its three seeds
+   (0, 1, 2). The release candidate is its seed-0 run, fixed now so that no
+   seed is picked on val.
+4. Per-class IoU and coverage MAE are reported for every run.
 
 Each run's best epoch is chosen on val, so every val number here is
 optimistic in the same way. Only the declared release is scored on the test

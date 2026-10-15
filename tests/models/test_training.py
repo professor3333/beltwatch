@@ -71,12 +71,22 @@ def test_segformer_config_matches_unet_except_the_model() -> None:
     assert unet == segformer
 
 
+CLASS_WEIGHTS = (1.0, 2.8, 4.0, 10.0, 10.0)
 EXPERIMENT_CHANGES = {
     "segformer-b0-ce-seed1": {("runtime", "seed"): 1},
     "segformer-b0-ce-seed2": {("runtime", "seed"): 2},
     "segformer-b0-ce-dice": {("loss", "kind"): "ce_dice"},  # dice_weight stays at its default 1
     "segformer-b0-ce-material": {("augment", "material_crop_prob"): 0.5},
-    "segformer-b0-ce-classweights": {("loss", "class_weights"): (1.0, 2.8, 4.0, 10.0, 10.0)},
+    "segformer-b0-ce-classweights": {("loss", "class_weights"): CLASS_WEIGHTS},
+    # Round 2: fresh seeds of the class-weight change (docs/training.md §6).
+    "segformer-b0-ce-classweights-seed1": {
+        ("loss", "class_weights"): CLASS_WEIGHTS,
+        ("runtime", "seed"): 1,
+    },
+    "segformer-b0-ce-classweights-seed2": {
+        ("loss", "class_weights"): CLASS_WEIGHTS,
+        ("runtime", "seed"): 2,
+    },
 }
 
 
