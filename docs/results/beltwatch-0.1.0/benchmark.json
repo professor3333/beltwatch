@@ -1,0 +1,71 @@
+{
+  "release": "beltwatch-0.1.0",
+  "model_kind": "segformer",
+  "model_sha256": "7be82fdedc06a978ced8b3ef3cdf53461f5e60bbe462fbbeb63c8e2aa4046756",
+  "git_commit": "1c2e080d26a317d22f153b2ca0dc3b5ec40debca",
+  "image_size": [
+    1920,
+    1080
+  ],
+  "iterations": 20,
+  "predict_only": {
+    "p50_seconds": 0.5808,
+    "p95_seconds": 0.7513,
+    "max_seconds": 0.8119,
+    "mean_seconds": 0.6177
+  },
+  "full_pipeline": {
+    "p50_seconds": 1.3284,
+    "p95_seconds": 1.5944,
+    "max_seconds": 1.6902,
+    "mean_seconds": 1.3696
+  },
+  "breakdown": {
+    "process_image": {
+      "p50_seconds": 0.8999,
+      "p95_seconds": 1.19,
+      "max_seconds": 1.2739,
+      "mean_seconds": 0.9517
+    },
+    "encode_mask_png": {
+      "p50_seconds": 0.0232,
+      "p95_seconds": 0.0263,
+      "max_seconds": 0.0289,
+      "mean_seconds": 0.0235
+    },
+    "encode_overlay_png": {
+      "p50_seconds": 0.3101,
+      "p95_seconds": 0.3212,
+      "max_seconds": 0.3248,
+      "mean_seconds": 0.3105
+    },
+    "encode_uncertainty_png": {
+      "p50_seconds": 0.0837,
+      "p95_seconds": 0.091,
+      "max_seconds": 0.1111,
+      "mean_seconds": 0.0839
+    }
+  },
+  "images_per_second": 0.7302,
+  "peak_rss_mb": 957.9,
+  "wall_seconds": 39.74,
+  "targets": {
+    "p95_seconds": 3.0,
+    "images_per_second": 0.5,
+    "peak_rss_mb": 2048.0
+  },
+  "meets_targets": {
+    "p95_seconds": true,
+    "images_per_second": true,
+    "peak_rss_mb": true
+  },
+  "hardware": {
+    "platform": "Linux-6.18.48+-x86_64-with-glibc2.39",
+    "machine": "x86_64",
+    "cpu_count": 4,
+    "torch_threads": 4,
+    "torch_version": "2.14.1+cpu"
+  },
+  "note": "planning targets from the design; meaningful only on the target hardware",
+  "beltwatch_version": "0.1.0"
+}

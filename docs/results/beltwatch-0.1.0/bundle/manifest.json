@@ -1,0 +1,53 @@
+{
+  "version": "beltwatch-0.1.0",
+  "created_at": "2026-10-15T13:58:46+00:00",
+  "model": {
+    "kind": "segformer",
+    "path": "model.pt",
+    "sha256": "7be82fdedc06a978ced8b3ef3cdf53461f5e60bbe462fbbeb63c8e2aa4046756"
+  },
+  "preprocessing_version": "pp-1",
+  "label_map": {
+    "0": "background",
+    "1": "cardboard",
+    "2": "soft_plastic",
+    "3": "rigid_plastic",
+    "4": "metal"
+  },
+  "temperature": 1.04,
+  "calibration_note": "temperature scaling fitted on the calibration split (4000000 pixels, 200 images); ECE overall 0.0088 -> 0.0093, foreground 0.1946 -> 0.1866 (fit scope: all)",
+  "review_policy": {
+    "version": "review-policy-1",
+    "coverage_threshold": 0.05,
+    "uncertainty": {
+      "entropy_threshold": 0.5,
+      "uncertain_fraction_threshold": 0.1,
+      "priority_weight": 0.5
+    },
+    "random_audit_rate": 0.1,
+    "quality": {
+      "min_sharpness": 20.0,
+      "min_mean_brightness": 25.0,
+      "max_mean_brightness": 235.0,
+      "max_clipped_fraction": 0.25
+    }
+  },
+  "provenance": {
+    "beltwatch_version": "0.1.0",
+    "git_commit": "1c2e080d26a317d22f153b2ca0dc3b5ec40debca",
+    "note": "SegFormer-B0 with the baseline configuration, the finalist of the declared experiments (docs/training.md §6: no change adopted in round 1 or round 2). Its seed-0 run was fixed as the release candidate before round 2. It beats the tuned random forest on val by 18.4 points of foreground macro IoU (paired block interval 11.9 to 25.2)."
+  },
+  "limitations": [
+    "Estimates visible image coverage only; not contamination by weight or bale purity.",
+    "Trained on one facility's paper-stream conveyor (ZeroWaste-f); not validated elsewhere.",
+    "Recognizes four materials: cardboard, soft plastic, rigid plastic, metal.",
+    "A background prediction does not certify that material is absent."
+  ],
+  "licenses": [
+    "BeltWatch code: MIT.",
+    "ZeroWaste-f data: attributed, noncommercial use (CC BY vs CC BY-NC discrepancy).",
+    "Pretrained encoder weights: see THIRD_PARTY_NOTICES.md."
+  ],
+  "evaluation_report": "evaluation.json",
+  "calibration_report": "calibration.json"
+}

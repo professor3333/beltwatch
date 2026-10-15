@@ -15,12 +15,12 @@ Semantic segmentation · visible-coverage estimation · uncertainty-aware review
 </div>
 
 > [!NOTE]
-> **Project status: system built; full-data training pending.** The complete
-> pipeline is implemented, tested (215 tests), and checked on real ZeroWaste
-> frames: data pipeline, baselines, U-Net and SegFormer training,
-> calibration, evaluation, error analysis, the audit service and review UI,
-> and the container deployment. No model has been trained on the full
-> dataset yet, so this README reports **no results**. See [Status](#status).
+> **Project status: first release evaluated.** Release `beltwatch-0.1.0`
+> (SegFormer-B0) was declared on val and scored once on the locked test
+> split: foreground macro IoU **0.336**, 18.4 points above the tuned random
+> forest. It **misses** the proposed 0.40 target and the review-workload
+> target. See [Results](#results). The pipeline, the audit service and the
+> deployment are built and tested (296 tests).
 
 ## Architecture
 
@@ -120,6 +120,53 @@ well-tuned U-Net is an acceptable winner.
 Details: [design §9–§16](docs/design.md#9-model-strategy) and the
 [model card](docs/model_card.md).
 
+## Results
+
+Release `beltwatch-0.1.0`: SegFormer-B0, temperature 1.04, chosen on val and
+scored **once** on the locked test split (929 images) on 2026-10-15. The raw
+outputs are in [`docs/results/beltwatch-0.1.0/`](docs/results/beltwatch-0.1.0/README.md),
+and the full tables, including validation, are in the
+[model card](docs/model_card.md#evaluation).
+
+The official test split shares recordings with training (only sequence 08 is
+unseen), so these results hold for **held-out time windows of the same
+recordings**, not for new recordings or facilities. Intervals are 95% paired
+bootstrap over the 5 test recording sequences.
+
+| Model (test) | Foreground macro IoU | Cardboard | Soft plastic | Rigid plastic | Metal | Coverage MAE (bias), pp |
+|---|---|---|---|---|---|---|
+| All-background | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 17.97 (−17.97) |
+| Random forest (tuned on val) | 0.152 (0.125–0.161) | 0.425 | 0.165 | 0.005 | 0.013 | 16.81 (+16.43) |
+| **SegFormer-B0 (release)** | **0.336** (0.285–0.368) | 0.536 | 0.509 | 0.109 | 0.191 | **4.98** (−0.65) |
+
+- **Release − random forest:** +0.184 foreground macro IoU (+0.158 to
+  +0.207), with every class's interval above zero.
+- **Unseen recording (sequence 08, 215 images):** 0.321. Rigid plastic
+  falls to 0.038 there.
+- **Per class:** precision and recall are in the
+  [model card](docs/model_card.md#locked-test-split-929-images-declared-release-scored-once).
+  The release finds 73% of cardboard pixels and 60% of soft plastic, but
+  only 13% of rigid plastic and 28% of metal.
+- **Calibration (T 1.04):** test NLL 0.292 → 0.290, ECE 0.019 → 0.015,
+  foreground ECE 0.242 → 0.234. Foreground confidence remains poorly
+  calibrated.
+- **Review workload:** 89.7% of test images are audit-positive (more than
+  5% true coverage). The release's ordering scores an area of 0.542, random
+  0.503 and a perfect ordering 0.552. At this prevalence the curve cannot
+  show a useful ordering.
+- **CPU benchmark:** full pipeline p50 1.33 s, p95 1.59 s, 0.73 images/s,
+  958 MB peak. Measured on a Kaggle CPU session with 4 cores, **not** the
+  documented 4 vCPU / 8 GB host.
+
+| Proposed target | Result |
+|---|---|
+| ≥ 5 points over the tuned random forest | **Met:** +18.4 |
+| Foreground macro IoU ≥ 0.40 | **Missed:** 0.336 |
+| Coverage MAE ≤ 5 points | **Met, narrowly:** 4.98 (one val seed scored 5.38) |
+| Recall vs workload clearly better than random | **Missed:** not demonstrable at 89.7% prevalence |
+| Seed spread ≤ 2 points | **Met:** 0.29 points over 3 seeds (val) |
+| p95 ≤ 3 s, ≥ 0.5 images/s, ≤ 2 GB | **Met** on Kaggle; not yet measured on the documented host |
+
 ## Tech stack
 
 | Area | Tools |
@@ -137,17 +184,17 @@ Details: [design §9–§16](docs/design.md#9-model-strategy) and the
 | Pinned, checksummed, resumable download; validation and quarantine | Built and tested; checked on real archive data |
 | Duplicate and leakage audit; official-repaired split policy | Built and tested; checked on real data |
 | Shared preprocessing; mask conversion; augmentation | Built and tested; overlays checked on real frames |
-| All-background and random-forest baselines | Built and tested; **full-data run pending** |
-| U-Net (ResNet-18) and SegFormer-B0 training with MLflow | Built and tested; **GPU training pending** |
-| Temperature-scaling calibration (overall and foreground ECE) | Built and tested; **fit on trained models pending** |
+| All-background and random-forest baselines | Done: full data; forest tuned on val (rf-tuning-1) |
+| U-Net (ResNet-18) and SegFormer-B0 training with MLflow | Done: trained on Kaggle GPUs; SegFormer-B0 selected |
+| Temperature-scaling calibration (overall and foreground ECE) | Done: fitted on the calibration split; T 1.04 for the release |
 | Evaluation suite: foreground macro IoU, coverage MAE, review workload, group bootstrap | Built and tested |
-| Error-analysis report and CPU benchmark | Built and tested; **runs on trained models pending** |
+| Error-analysis report and CPU benchmark | Done on val ([findings](docs/error_analysis.md)); benchmark on Kaggle CPU, not yet on the documented host |
 | Audit service: durable jobs, leases, retries, idempotency, append-only feedback, reports | Built and tested; exercised live |
 | Review UI | Built; exercised in a headless browser |
 | Versioned release bundles, activation, and rollback | Built; switch and rollback verified in CI |
 | Docker Compose deployment (HTTPS proxy, API, worker, Prometheus) | Built; deployed and smoke-tested in CI |
-| Ablations (loss, sampling, resolution) and 3-seed finalists | Not started (needs GPU) |
-| Locked test-set evaluation of a declared release | Not started (after model selection on val) |
+| Ablations and 3-seed finalists | Done for loss, crop sampling and class weights (none adopted); 3 seeds of the finalist. Inference resolution not run |
+| Locked test-set evaluation of a declared release | Done once, for `beltwatch-0.1.0` ([results](#results)) |
 | Staged robustness dataset, usability study, hosted demo, ONNX/INT8 | Not started |
 
 The full plan, targets, and Definition of Done are in
@@ -163,6 +210,11 @@ cardboard, soft plastic, rigid plastic, and metal.
 - Project: <https://ai.bu.edu/zerowaste/>
 - Release: [Zenodo record 6412647](https://zenodo.org/records/6412647) (`zerowaste-f-final.zip`, about 7.5 GB)
 - Paper: Bashkirova et al., [PMLR vol. 220](https://proceedings.mlr.press/v220/bashkirova23a/bashkirova23a.pdf)
+- Measured: 4,503 valid 1920 × 1080 images (release splits train 3,002 ·
+  val 572 · test 929), 0 quarantined. After the
+  [official-repaired split policy](docs/dataset_card.md#split-policy-official-repaired):
+  train 2,888 · val 370 · calibration 200 · test 929 (locked) · excluded 116,
+  split manifest `c8285117…` in `data/splits/`.
 
 > [!IMPORTANT]
 > **License discrepancy.** The Zenodo record shows CC BY 4.0, while the
@@ -185,8 +237,11 @@ cardboard, soft plastic, rigid plastic, and metal.
 - The data covers one facility and a narrow range of operating conditions.
   BeltWatch makes no claim about other facilities or cameras without local
   validation.
-- It recognizes only four target materials, and rare classes have few
-  examples.
+- It recognizes only four target materials. Rigid plastic (test IoU 0.109)
+  and metal (0.191) are weak: rigid plastic is mostly confused with soft
+  plastic, and metal is mostly missed as background.
+- The test split has now been read. Any further tuning needs a new,
+  untouched evaluation set before a fresh unbiased claim.
 - Visible coverage is not contamination by weight.
 
 ## Development
@@ -329,16 +384,18 @@ scripts/benchmark.py     CPU latency, throughput, and memory of a release
 src/beltwatch/api/       FastAPI application and settings
 src/beltwatch/jobs/      SQLite job store, per-image pipeline, inference worker
 src/beltwatch/review/    Review policy (routing, priority, random audits)
-src/beltwatch/release/   Versioned, checksummed model release bundles
+src/beltwatch/release/   Versioned, checksummed release bundles, declarations, and runtime parity
 frontend/                Review UI (static HTML/CSS/JS, no external dependencies)
 Dockerfile, compose.yaml, docker/   Serving image, Compose stack, Caddy and Prometheus config
 scripts/deploy_smoke.py  Deployment smoke test (standard library only)
 configs/review_policy.yaml  Versioned review thresholds
-data/manifests/, data/splits/  Git-tracked pipeline outputs (written by the first full run)
+configs/releases/        Release declarations, committed before the test split is read
+docs/results/            Recorded outputs of each declared release's session
+data/manifests/, data/splits/  Git-tracked dataset version (pipeline outputs)
 tests/                   Unit and data tests (no network needed)
 docs/design.md           Full design: problem, data, models, evaluation, system, Definition of Done
 docs/dataset_card.md     Dataset provenance, licensing, split policy, and known limitations
-docs/model_card.md       Intended use, models, evaluation (pending results), failure modes
+docs/model_card.md       Intended use, models, results, failure modes
 docs/evaluation.md       Evaluation protocol: metrics, coverage, review workload, confidence intervals
 docs/training.md         GPU training runbook
 docs/architecture.md     Service architecture, failure handling, data model
@@ -347,9 +404,8 @@ docs/error_analysis.md   Error report contents and findings log
 THIRD_PARTY_NOTICES.md   Dataset and model licensing
 ```
 
-The source tree (`src/beltwatch/`, `api/`, `frontend/`, `configs/`,
-`tests/`) will be added as implementation proceeds. See
-[design §29](docs/design.md#29-repository-structure).
+See [design §29](docs/design.md#29-repository-structure) for the intended
+structure.
 
 ## License
 

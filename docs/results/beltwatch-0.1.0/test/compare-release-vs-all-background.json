@@ -1,0 +1,143 @@
+{
+  "a": {
+    "model": "segformer_b0",
+    "report_dir": "/kaggle/working/beltwatch-runs/release-beltwatch-0.1.0/test-reports/release/segformer_b0-test",
+    "temperature": 1.04,
+    "provenance": {
+      "git_commit": "1c2e080d26a317d22f153b2ca0dc3b5ec40debca",
+      "model_file": "/kaggle/input/datasets/nirojdanai/beltwatch-checkpoints/beltwatch-checkpoints/segformer-b0-ce/best.pt",
+      "model_sha256": "7be82fdedc06a978ced8b3ef3cdf53461f5e60bbe462fbbeb63c8e2aa4046756"
+    },
+    "foreground_macro_iou": 0.33623864313515095,
+    "iou": {
+      "cardboard": 0.5360677910541304,
+      "soft_plastic": 0.5087406604710095,
+      "rigid_plastic": 0.1091400075908724,
+      "metal": 0.19100611342459145
+    }
+  },
+  "b": {
+    "model": "all-background",
+    "report_dir": "/kaggle/working/beltwatch-runs/release-beltwatch-0.1.0/test-reports/all-background/all-background-test",
+    "temperature": 1.0,
+    "provenance": {
+      "git_commit": "1c2e080d26a317d22f153b2ca0dc3b5ec40debca",
+      "model_file": null,
+      "model_sha256": null
+    },
+    "foreground_macro_iou": 0.0,
+    "iou": {
+      "cardboard": 0.0,
+      "soft_plastic": 0.0,
+      "rigid_plastic": 0.0,
+      "metal": 0.0
+    }
+  },
+  "split": "test",
+  "split_manifest_id": "c82851178745739c24daa50338ff5f65cb38f8a172420ec5d39a5fdd28d73ead",
+  "n_images": 929,
+  "limited_to": null,
+  "difference_a_minus_b": {
+    "foreground_macro_iou": {
+      "groups_by_sequence": {
+        "estimate": 0.33623864313515095,
+        "low": 0.2847623766475831,
+        "high": 0.3677294183072635,
+        "n_groups": 5,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": false
+      },
+      "groups_by_1000_frame_block": {
+        "estimate": 0.33623864313515095,
+        "low": 0.30862120701135665,
+        "high": 0.3780462996121755,
+        "n_groups": 69,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": false
+      }
+    },
+    "iou_cardboard": {
+      "groups_by_sequence": {
+        "estimate": 0.5360677910541304,
+        "low": 0.44266713455678647,
+        "high": 0.5691605941822407,
+        "n_groups": 5,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": false
+      },
+      "groups_by_1000_frame_block": {
+        "estimate": 0.5360677910541304,
+        "low": 0.4882211591803448,
+        "high": 0.5760755573924004,
+        "n_groups": 69,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": false
+      }
+    },
+    "iou_soft_plastic": {
+      "groups_by_sequence": {
+        "estimate": 0.5087406604710095,
+        "low": 0.4902493718467787,
+        "high": 0.5362511156357934,
+        "n_groups": 5,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": false
+      },
+      "groups_by_1000_frame_block": {
+        "estimate": 0.5087406604710095,
+        "low": 0.4798438507873086,
+        "high": 0.5407911773889045,
+        "n_groups": 69,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": false
+      }
+    },
+    "iou_rigid_plastic": {
+      "groups_by_sequence": {
+        "estimate": 0.1091400075908724,
+        "low": 0.03882156289952055,
+        "high": 0.20151706625440668,
+        "n_groups": 5,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": false
+      },
+      "groups_by_1000_frame_block": {
+        "estimate": 0.1091400075908724,
+        "low": 0.06557607709368748,
+        "high": 0.223817953097344,
+        "n_groups": 69,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": false
+      }
+    },
+    "iou_metal": {
+      "groups_by_sequence": {
+        "estimate": 0.19100611342459145,
+        "low": 0.10803726702893866,
+        "high": 0.20719053626271003,
+        "n_groups": 5,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": false
+      },
+      "groups_by_1000_frame_block": {
+        "estimate": 0.19100611342459145,
+        "low": 0.10304758805609614,
+        "high": 0.30347278520309257,
+        "n_groups": 69,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": false
+      }
+    }
+  },
+  "note": "paired bootstrap over recording groups; both models resampled on the same groups"
+}

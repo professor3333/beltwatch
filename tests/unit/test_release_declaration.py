@@ -76,3 +76,29 @@ def test_unknown_fields_are_refused(tmp_path: Path) -> None:
     path.write_text(DECLARATION.read_text() + "\nsurprise: 1\n")
     with pytest.raises(ValueError, match="surprise"):
         decl.load_declaration(path)
+
+
+RECORD = Path("docs/results/beltwatch-0.1.0")
+
+
+def test_committed_release_record_matches_the_declaration() -> None:
+    """The published results come from the declared release, and its test run is complete."""
+    d = decl.load_declaration(DECLARATION)
+    assert (
+        decl.check(
+            d,
+            calibration=RECORD / "calibration.json",
+            val_report=RECORD / "val/release.json",
+            release_dir=RECORD / "bundle",
+            forest_val_report=RECORD / "val/random-forest.json",
+        )
+        == []
+    )
+    complete = json.loads((RECORD / "test" / decl.TEST_COMPLETE).read_text())
+    assert complete["version"] == d.version and complete["skipped"] == []
+    assert sorted(complete["evaluations"]) == sorted(d.test_evaluations)
+    for evaluation in d.test_evaluations:
+        report = json.loads((RECORD / f"test/{evaluation}.json").read_text())
+        assert report["split"] == "test" and report["declared_release"] == d.version
+        assert report["limited_to"] is None
+    assert decl.check(d, test_dir=RECORD / "test") != []  # never scored again

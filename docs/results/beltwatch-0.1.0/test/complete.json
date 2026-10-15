@@ -1,0 +1,11 @@
+{
+  "version": "beltwatch-0.1.0",
+  "evaluations": [
+    "all-background",
+    "random-forest",
+    "release",
+    "release-uncalibrated"
+  ],
+  "skipped": [],
+  "git_commit": "1c2e080d26a317d22f153b2ca0dc3b5ec40debca"
+}
