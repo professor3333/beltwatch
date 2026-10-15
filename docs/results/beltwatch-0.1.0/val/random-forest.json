@@ -1,0 +1,250 @@
+{
+  "model": "random-forest",
+  "split": "val",
+  "n_images": 370,
+  "beltwatch_version": "0.1.0",
+  "preprocessing_version": "pp-1",
+  "segmentation": {
+    "foreground_macro_iou": 0.1347696947988463,
+    "mean_iou": 0.2515074647190187,
+    "pixel_accuracy": 0.7280799705955956,
+    "iou": {
+      "background": 0.7184585443997081,
+      "cardboard": 0.39553849372270045,
+      "soft_plastic": 0.13469314101140845,
+      "rigid_plastic": 0.007291133492778119,
+      "metal": 0.0015560109684981261
+    },
+    "dice": {
+      "background": 0.8361662802295647,
+      "cardboard": 0.5668614595754686,
+      "soft_plastic": 0.2374089278293332,
+      "rigid_plastic": 0.014476715321609438,
+      "metal": 0.0031071871197567344
+    },
+    "precision": {
+      "background": 0.9493828559941889,
+      "cardboard": 0.45201482726514475,
+      "soft_plastic": 0.15290476004271042,
+      "rigid_plastic": 0.15617862964066273,
+      "metal": 0.036677787607789634
+    },
+    "recall": {
+      "background": 0.7470754335868742,
+      "cardboard": 0.759946485366471,
+      "soft_plastic": 0.5307111231702906,
+      "rigid_plastic": 0.007590135060760158,
+      "metal": 0.0016223112348235401
+    },
+    "undefined_classes": []
+  },
+  "coverage": {
+    "total_mae_pp": 17.756824141850185,
+    "per_class_mae_pp": {
+      "cardboard": 8.039050378503502,
+      "soft_plastic": 11.822257152986317,
+      "rigid_plastic": 1.120437494786453,
+      "metal": 0.2844648033450117
+    },
+    "total_bias_pp": 17.69337371225392,
+    "n_images": 370
+  },
+  "review_workload": {
+    "n_images": 370,
+    "n_positive": 331,
+    "prevalence": 0.8945945945945946,
+    "area": 0.5349677472033967,
+    "recall_at": {
+      "0.10": 0.10876132930513595,
+      "0.20": 0.22054380664652568,
+      "0.30": 0.32628398791540786,
+      "0.50": 0.5438066465256798
+    }
+  },
+  "confidence_intervals": {
+    "foreground_macro_iou": {
+      "groups_by_sequence": {
+        "estimate": 0.1347696947988463,
+        "low": 0.10781436247860542,
+        "high": 0.14986129809934806,
+        "n_groups": 4,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": true
+      },
+      "groups_by_1000_frame_block": {
+        "estimate": 0.1347696947988463,
+        "low": 0.12238552710512482,
+        "high": 0.1540143278393351,
+        "n_groups": 31,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": false
+      }
+    }
+  },
+  "calibration": {
+    "nll": 0.708034,
+    "overall": {
+      "ece": 0.079481,
+      "n_pixels": 740000,
+      "bin_edges": [
+        0.0,
+        0.066667,
+        0.133333,
+        0.2,
+        0.266667,
+        0.333333,
+        0.4,
+        0.466667,
+        0.533333,
+        0.6,
+        0.666667,
+        0.733333,
+        0.8,
+        0.866667,
+        0.933333,
+        1.0
+      ],
+      "confidence": [
+        null,
+        null,
+        null,
+        0.25462,
+        0.313565,
+        0.369803,
+        0.433098,
+        0.49808,
+        0.563577,
+        0.632047,
+        0.699714,
+        0.76712,
+        0.834715,
+        0.901865,
+        0.972667
+      ],
+      "accuracy": [
+        null,
+        null,
+        null,
+        0.325688,
+        0.409523,
+        0.488952,
+        0.543019,
+        0.573083,
+        0.686894,
+        0.785891,
+        0.809471,
+        0.831929,
+        0.871097,
+        0.931272,
+        0.996301
+      ],
+      "count": [
+        0,
+        0,
+        0,
+        436,
+        24194,
+        91332,
+        113718,
+        92634,
+        58782,
+        39704,
+        34168,
+        34652,
+        43110,
+        54257,
+        153013
+      ]
+    },
+    "foreground": {
+      "ece": 0.2559,
+      "n_pixels": 281641,
+      "bin_edges": [
+        0.0,
+        0.066667,
+        0.133333,
+        0.2,
+        0.266667,
+        0.333333,
+        0.4,
+        0.466667,
+        0.533333,
+        0.6,
+        0.666667,
+        0.733333,
+        0.8,
+        0.866667,
+        0.933333,
+        1.0
+      ],
+      "confidence": [
+        null,
+        null,
+        null,
+        0.254446,
+        0.313006,
+        0.368971,
+        0.433,
+        0.497716,
+        0.561382,
+        0.631424,
+        0.700234,
+        0.768038,
+        0.835199,
+        0.898004,
+        0.953153
+      ],
+      "accuracy": [
+        null,
+        null,
+        null,
+        0.072555,
+        0.110572,
+        0.114629,
+        0.136746,
+        0.181797,
+        0.260517,
+        0.318065,
+        0.401819,
+        0.527848,
+        0.696621,
+        0.796541,
+        0.916679
+      ],
+      "count": [
+        0,
+        0,
+        0,
+        317,
+        16062,
+        52718,
+        60199,
+        48334,
+        24889,
+        12466,
+        10883,
+        12335,
+        18317,
+        18328,
+        6793
+      ]
+    }
+  },
+  "slices": {},
+  "prediction_seconds": {
+    "p50": 1.2264305365006294,
+    "p95": 1.3598657063503197,
+    "note": "predict_proba only, on the evaluation machine; not a serving benchmark"
+  },
+  "split_manifest_id": "c82851178745739c24daa50338ff5f65cb38f8a172420ec5d39a5fdd28d73ead",
+  "declared_release": null,
+  "limited_to": null,
+  "temperature": 1.0,
+  "provenance": {
+    "git_commit": "1c2e080d26a317d22f153b2ca0dc3b5ec40debca",
+    "model_file": "/kaggle/working/beltwatch-runs/release-beltwatch-0.1.0/random-forest/model.joblib",
+    "model_sha256": "d792962565a80c4ffe1a39d1e47303bdf0d7d1c95cff7bfb9b319dcbbede4f70"
+  }
+}

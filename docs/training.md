@@ -161,6 +161,14 @@ its output. It then finishes only the declared evaluations that are missing.
 After `complete.json` is written, the test split is not scored again for
 that release.
 
+**Result (2026-10-15, commit `1c2e080`, clean):** every check passed. The
+temperature refit gave 1.04, val reproduced 0.31856, runtime parity held,
+and the refitted forest reproduced 0.13477, so all four declared test
+evaluations ran and none was skipped. The outputs are in
+[`docs/results/beltwatch-0.1.0/`](results/beltwatch-0.1.0/README.md) and the
+numbers in the [model card](model_card.md#evaluation). The forest refit took
+4,526 s.
+
 After `dvc repro`, the notebook checks the rebuilt dataset-version files
 against the commit. If only the download time in
 `zerowaste-f-download.json` differs (and the `dvc.lock` hash that follows

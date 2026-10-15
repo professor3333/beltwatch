@@ -1,0 +1,143 @@
+{
+  "a": {
+    "model": "segformer_b0",
+    "report_dir": "/kaggle/working/beltwatch-runs/release-beltwatch-0.1.0/test-reports/release/segformer_b0-test",
+    "temperature": 1.04,
+    "provenance": {
+      "git_commit": "1c2e080d26a317d22f153b2ca0dc3b5ec40debca",
+      "model_file": "/kaggle/input/datasets/nirojdanai/beltwatch-checkpoints/beltwatch-checkpoints/segformer-b0-ce/best.pt",
+      "model_sha256": "7be82fdedc06a978ced8b3ef3cdf53461f5e60bbe462fbbeb63c8e2aa4046756"
+    },
+    "foreground_macro_iou": 0.33623864313515095,
+    "iou": {
+      "cardboard": 0.5360677910541304,
+      "soft_plastic": 0.5087406604710095,
+      "rigid_plastic": 0.1091400075908724,
+      "metal": 0.19100611342459145
+    }
+  },
+  "b": {
+    "model": "random-forest",
+    "report_dir": "/kaggle/working/beltwatch-runs/release-beltwatch-0.1.0/test-reports/random-forest/random-forest-test",
+    "temperature": 1.0,
+    "provenance": {
+      "git_commit": "1c2e080d26a317d22f153b2ca0dc3b5ec40debca",
+      "model_file": "/kaggle/working/beltwatch-runs/release-beltwatch-0.1.0/random-forest/model.joblib",
+      "model_sha256": "d792962565a80c4ffe1a39d1e47303bdf0d7d1c95cff7bfb9b319dcbbede4f70"
+    },
+    "foreground_macro_iou": 0.15178520657892478,
+    "iou": {
+      "cardboard": 0.4249163870547495,
+      "soft_plastic": 0.1645225480668187,
+      "rigid_plastic": 0.004759771001942439,
+      "metal": 0.012942120192188418
+    }
+  },
+  "split": "test",
+  "split_manifest_id": "c82851178745739c24daa50338ff5f65cb38f8a172420ec5d39a5fdd28d73ead",
+  "n_images": 929,
+  "limited_to": null,
+  "difference_a_minus_b": {
+    "foreground_macro_iou": {
+      "groups_by_sequence": {
+        "estimate": 0.18445343655622617,
+        "low": 0.15786002425290235,
+        "high": 0.20664858498098057,
+        "n_groups": 5,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": false
+      },
+      "groups_by_1000_frame_block": {
+        "estimate": 0.18445343655622617,
+        "low": 0.1623273006736059,
+        "high": 0.2192873322303371,
+        "n_groups": 69,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": false
+      }
+    },
+    "iou_cardboard": {
+      "groups_by_sequence": {
+        "estimate": 0.1111514039993809,
+        "low": 0.09664720512117358,
+        "high": 0.12809118858012386,
+        "n_groups": 5,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": false
+      },
+      "groups_by_1000_frame_block": {
+        "estimate": 0.1111514039993809,
+        "low": 0.09655819655754301,
+        "high": 0.12143049481325822,
+        "n_groups": 69,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": false
+      }
+    },
+    "iou_soft_plastic": {
+      "groups_by_sequence": {
+        "estimate": 0.3442181124041908,
+        "low": 0.32032046427185673,
+        "high": 0.36846972684666823,
+        "n_groups": 5,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": false
+      },
+      "groups_by_1000_frame_block": {
+        "estimate": 0.3442181124041908,
+        "low": 0.317931187259403,
+        "high": 0.372270869375789,
+        "n_groups": 69,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": false
+      }
+    },
+    "iou_rigid_plastic": {
+      "groups_by_sequence": {
+        "estimate": 0.10438023658892996,
+        "low": 0.03570593156433682,
+        "high": 0.19354272965979075,
+        "n_groups": 5,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": false
+      },
+      "groups_by_1000_frame_block": {
+        "estimate": 0.10438023658892996,
+        "low": 0.060938053651297605,
+        "high": 0.21651960748140342,
+        "n_groups": 69,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": false
+      }
+    },
+    "iou_metal": {
+      "groups_by_sequence": {
+        "estimate": 0.17806399323240304,
+        "low": 0.10354125580455797,
+        "high": 0.19189014875498242,
+        "n_groups": 5,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": false
+      },
+      "groups_by_1000_frame_block": {
+        "estimate": 0.17806399323240304,
+        "low": 0.09462432827242113,
+        "high": 0.28380080191188733,
+        "n_groups": 69,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": false
+      }
+    }
+  },
+  "note": "paired bootstrap over recording groups; both models resampled on the same groups"
+}

@@ -1,7 +1,8 @@
 # Dataset Card: ZeroWaste-f (as used by BeltWatch)
 
-> This card is filled in as the data pipeline is built. Values marked
-> *pending* have not been measured yet.
+> Measured values come from the full download and pipeline run of
+> 2026-10-12 (dataset version committed in `data/manifests/` and
+> `data/splits/`).
 
 ## Source
 

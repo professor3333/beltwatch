@@ -4,8 +4,9 @@ How every BeltWatch model, including the baselines, is scored. The code is in
 [`src/beltwatch/evaluation/`](../src/beltwatch/evaluation) and
 [`src/beltwatch/inference/postprocessing.py`](../src/beltwatch/inference/postprocessing.py).
 
-> No results are reported yet. Numbers appear here only after they come from
-> tracked runs.
+> Results appear only from tracked runs. The first declared release's
+> results are in the [model card](model_card.md#evaluation), and its raw
+> outputs in [`results/beltwatch-0.1.0/`](results/beltwatch-0.1.0/README.md).
 
 ## Splits
 
@@ -69,6 +70,12 @@ coverage_c = pixels labelled c inside the inspection region
   every reviewed image counts toward workload. Ties are broken randomly.
 - Reported: prevalence, area under the curve (random ordering is about 0.5),
   and recall at 10%, 20%, 30%, and 50% workload.
+- The achievable gain shrinks as prevalence grows: a perfect ordering's
+  area is 1 − prevalence / 2. On ZeroWaste-f about 90% of val and test
+  images are audit-positive at the 5% convention, so a perfect ordering
+  scores about 0.55 against 0.50 for random, and the curve separates
+  orderings poorly. The convention was declared before results and is kept;
+  the model card reports the perfect ordering next to the measured ones.
 - Orderings compared: random, the classical baseline, the neural model, and
   the neural model with an uncertainty share and random audits.
 
