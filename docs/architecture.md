@@ -68,6 +68,34 @@ retention period (24 hours by default) and are deleted by the worker.
 Feedback is used for training only when the audit was created with
 `training_consent: true`, and only after annotation review.
 
+### From feedback to a dataset version
+
+Reviewer feedback becomes training data in three explicit steps
+(`beltwatch.data.feedback`), on the training side and outside app storage:
+
+1. **Export** (`... feedback export --data-dir var --out data/feedback/<batch>`)
+   reads the database read-only, takes only consented audits with feedback,
+   copies each upload (checked against its SHA-256) and corrected mask into an
+   immutable batch, and records the original prediction with the full,
+   ordered feedback history. Run it before the retention period deletes the
+   uploads. Images that cannot be verified are listed as skipped, with the
+   reason.
+2. **Annotation review** (`... feedback review <batch> <candidate> --decision
+   accept|reject --annotator <name> --reason "..."`) appends to the batch's
+   `reviews.jsonl`. Earlier decisions are never rewritten.
+3. **Eligibility** (`... feedback eligible <batch>`): only accepted candidates
+   with a **corrected pixel mask** may enter a dataset version. A reviewer
+   confirming "plastic present" is an image-level label and does not validate
+   the predicted pixels, so accepted image-level candidates are listed
+   separately and are not segmentation labels.
+
+No consented feedback exists yet, so no dataset version includes feedback and
+no DVC stage consumes these batches. A future version adds one, keeps its
+images in their own group (they are not ZeroWaste frames and never join the
+locked test split), and records the batch's `export.json`. Deleting an audit
+does not reach batches already exported; apply the request to the batch and
+record a `reject`.
+
 ## Model releases
 
 See [`model_releases/README.md`](../model_releases/README.md). A release

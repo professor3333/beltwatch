@@ -5,6 +5,7 @@ data/interim/
 data/processed/
 data/quarantine/
 data/external/
+data/feedback/
 *.zip
 *.tar
 *.tar.gz
