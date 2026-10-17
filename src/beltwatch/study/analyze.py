@@ -15,13 +15,14 @@ import argparse
 import json
 import logging
 from collections.abc import Callable, Sequence
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 
 from beltwatch.study.prepare import StudyError, load_study
-from beltwatch.study.submit import AUDITS_FILE
+from beltwatch.study.submit import AUDITS_FILE, PILOT
 
 log = logging.getLogger(__name__)
 
@@ -45,6 +46,8 @@ def load_session(path: Path, study: dict[str, Any], audits: dict[str, Any]) -> d
         raise StudyError("unsupported results version")
     if data.get("study") != study["name"]:
         raise StudyError(f"results are for study {data.get('study')!r}")
+    if data.get("participant") == PILOT:
+        raise StudyError("pilot session (never analysed)")
     if not data.get("completed"):
         raise StudyError("session not completed")
     lookup = {
@@ -244,13 +247,56 @@ def analyze(study_dir: Path, result_files: Sequence[Path]) -> dict[str, Any]:
     }
 
 
+def pilot_summary(path: Path) -> dict[str, Any]:
+    """Session length and decision times of a pilot. No accuracy, by design."""
+    data = json.loads(path.read_text())
+    if data.get("participant") != PILOT:
+        raise StudyError(f"{path.name} is not a pilot session")
+    trials = data.get("trials", [])
+    started, finished = data.get("started_at"), data.get("finished_at")
+    minutes = None
+    if started and finished:
+        delta = datetime.fromisoformat(finished) - datetime.fromisoformat(started)
+        minutes = delta.total_seconds() / 60
+    by_condition = {}
+    for condition in CONDITIONS:
+        seconds = [
+            t["seconds"] for t in trials if t["condition"] == condition and not t["practice"]
+        ]
+        by_condition[condition] = {
+            "n_trials": len(seconds),
+            "median_seconds": float(np.median(seconds)) if seconds else None,
+            "max_seconds": max(seconds) if seconds else None,
+        }
+    return {
+        "label": "pilot session: protocol check only, not a usability-study result",
+        "completed": bool(data.get("completed")),
+        "n_trials": len(trials),
+        "session_minutes": minutes,
+        "by_condition": by_condition,
+    }
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("study_dir", type=Path)
     parser.add_argument("--results", type=Path, nargs="+", required=True)
-    parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--out", type=Path)
+    parser.add_argument(
+        "--pilot", action="store_true", help="summarise a PILOT session (timing only)"
+    )
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(message)s")
+    if args.pilot:
+        try:
+            for path in args.results:
+                print(json.dumps(pilot_summary(path), indent=2))
+        except StudyError as exc:
+            log.error("%s", exc)
+            return 1
+        return 0
+    if args.out is None:
+        parser.error("--out is required unless --pilot is given")
     try:
         report = analyze(args.study_dir, args.results)
     except StudyError as exc:

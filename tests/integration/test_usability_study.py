@@ -9,7 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from beltwatch.jobs.worker import Worker
-from beltwatch.study.analyze import analyze
+from beltwatch.study.analyze import analyze, pilot_summary
 from beltwatch.study.prepare import StudyError, load_study, prepare_study
 from beltwatch.study.submit import ARMS, submit_study
 from tests.integration.conftest import png_bytes
@@ -272,3 +272,31 @@ def test_analysis_rejects_inconsistent_sessions(
     report = analyze(study_dir, [bad])
     assert report["primary"]["recall_difference"] == 0.0
     assert report["primary"]["too_few_groups"]
+
+
+def test_pilot_is_planned_but_never_analysed(
+    study_dir: Path, client: TestClient, worker: Worker, tmp_path: Path
+) -> None:
+    submit_study(study_dir, client_transport(client, worker), participants=1, poll_seconds=0)
+    pilot_plan = study_dir / "plans" / "PILOT.json"
+    assert json.loads(pilot_plan.read_text())["participant"] == "PILOT"
+    pilot = fake_session(study_dir, pilot_plan, 10.0, 6.0, "truth")
+    pilot |= {"started_at": "2026-10-17T10:00:00+00:00", "finished_at": "2026-10-17T10:18:30+00:00"}
+    pilot_file = tmp_path / "results-PILOT.json"
+    pilot_file.write_text(json.dumps(pilot))
+    real = tmp_path / "results-P01.json"
+    real.write_text(
+        json.dumps(fake_session(study_dir, study_dir / "plans" / "P01.json", 10.0, 6.0, "truth"))
+    )
+
+    report = analyze(study_dir, [pilot_file, real])
+    assert report["n_sessions"] == 1
+    assert report["excluded_sessions"] == [
+        {"file": "results-PILOT.json", "reason": "pilot session (never analysed)"}
+    ]
+    summary = pilot_summary(pilot_file)
+    assert summary["session_minutes"] == pytest.approx(18.5)
+    assert summary["by_condition"]["unaided"]["n_trials"] == 20
+    assert "recall" not in json.dumps(summary)  # timing only, by design
+    with pytest.raises(StudyError, match="not a pilot"):
+        pilot_summary(real)
