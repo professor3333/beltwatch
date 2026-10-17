@@ -99,6 +99,29 @@ judge region boundaries.
 Only an anonymous code (P01, P02, …) is stored. A participant who stops, or
 who withdraws later, is excluded and their file deleted.
 
+## Pilot session
+
+Declared on 2026-10-17, before the pilot was run.
+
+The developer runs one session on `plans/PILOT.json` (arm 0: set A unaided,
+then set B assisted) to check the protocol, not BeltWatch:
+
+- how long a session takes (target about 20 minutes);
+- whether the instructions and the "about 5%" question are clear;
+- whether anything on the page gets in the way.
+
+The developer built the model and has seen its error analysis, so their
+answers and times would measure that knowledge. The pilot therefore:
+
+- is **never analysed** as a study session: `analyze` excludes any `PILOT`
+  results file;
+- is summarised for timing only (`analyze --pilot`), with no recall or
+  false-alarm figures;
+- may change the session length or instructions before the first
+  participant. Any change is recorded here with the date, and the analysis
+  above stays as declared;
+- rules the developer out as a study participant.
+
 ## Declared analysis
 
 Run by `python -m beltwatch.study.analyze`. Fixed now and not changed after
@@ -158,6 +181,9 @@ uv run python -m beltwatch.study.submit data/study/study-1 --base-url http://loc
 
 # 3. Each session: open http://localhost:8000/study.html and load plans/P0n.json.
 
+#    The developer's protocol check uses plans/PILOT.json; summarise it with
+uv run python -m beltwatch.study.analyze data/study/study-1 --results results-PILOT.json --pilot
+
 # 4. Analyse the downloaded results.
 uv run python -m beltwatch.study.analyze data/study/study-1 --results results-P*.json \
     --out reports/study-1
@@ -173,4 +199,5 @@ The kit was dry-run on 2026-10-17 against the `beltwatch-0.1.0` release:
 selection from the committed manifest, the 42 frames through the real audit
 path, two complete scripted sessions in headless Chromium (no console
 errors), and the analysis. That checks the mechanics only. **No participant
-session has been run, so there is no result yet.**
+session has been run, so there is no result yet.** The developer pilot
+(above) is pending.

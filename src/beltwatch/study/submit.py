@@ -8,7 +8,8 @@ Usage::
 Each set (practice, A, B) becomes one audit, created with an idempotency key,
 so running this again replays the same audits instead of creating new ones.
 The assisted condition therefore shows live results of the active release.
-Writes ``audits.json`` and ``plans/P01.json`` ... The plans hold image IDs
+Writes ``audits.json``, ``plans/P01.json`` ... and ``plans/PILOT.json`` (a
+protocol check that the analysis never includes). The plans hold image IDs
 and display order only, never ground truth. See docs/usability_study.md.
 """
 
@@ -154,47 +155,61 @@ def _assisted_order(entry: dict[str, Any]) -> list[str]:
     return queue + rest
 
 
+PILOT = "PILOT"
+
+
+def _plan(
+    study: dict[str, Any],
+    audits: dict[str, Any],
+    code: str,
+    arm_index: int,
+    rng: np.random.Generator,
+) -> dict[str, Any]:
+    blocks = []
+    for set_name, condition in ARMS[arm_index]:
+        entry = audits[set_name]
+        ids = list(entry["images"])
+        order = (
+            _assisted_order(entry)
+            if condition == "assisted"
+            else [ids[i] for i in rng.permutation(len(ids))]
+        )
+        practice_ids = list(audits["practice"]["images"])
+        blocks.append(
+            {
+                "condition": condition,
+                "set": set_name,
+                "audit_id": entry["audit_id"],
+                "image_ids": order,
+                "practice_audit_id": audits["practice"]["audit_id"],
+                "practice_image_ids": [practice_ids[i] for i in rng.permutation(len(practice_ids))],
+            }
+        )
+    return {
+        "plan_version": PLAN_VERSION,
+        "study": study["name"],
+        "participant": code,
+        "arm": arm_index,
+        "audit_positive_threshold": study["rules"]["audit_positive_threshold"],
+        "material_present_threshold": study["rules"]["material_present_threshold"],
+        "blocks": blocks,
+    }
+
+
 def write_plans(
     study_dir: Path, study: dict[str, Any], audits: dict[str, Any], participants: int
 ) -> None:
+    """One plan per participant (P01, ...) plus a PILOT plan that is never analysed."""
     plans = study_dir / "plans"
     plans.mkdir(exist_ok=True)
     seed = study["rules"]["seed"]
     for p in range(1, participants + 1):
-        rng = np.random.default_rng([seed, p])
-        arm = ARMS[(p - 1) % len(ARMS)]
-        blocks = []
-        for set_name, condition in arm:
-            entry = audits[set_name]
-            ids = list(entry["images"])
-            order = (
-                _assisted_order(entry)
-                if condition == "assisted"
-                else [ids[i] for i in rng.permutation(len(ids))]
-            )
-            practice_ids = list(audits["practice"]["images"])
-            blocks.append(
-                {
-                    "condition": condition,
-                    "set": set_name,
-                    "audit_id": entry["audit_id"],
-                    "image_ids": order,
-                    "practice_audit_id": audits["practice"]["audit_id"],
-                    "practice_image_ids": [
-                        practice_ids[i] for i in rng.permutation(len(practice_ids))
-                    ],
-                }
-            )
-        plan = {
-            "plan_version": PLAN_VERSION,
-            "study": study["name"],
-            "participant": f"P{p:02d}",
-            "arm": (p - 1) % len(ARMS),
-            "audit_positive_threshold": study["rules"]["audit_positive_threshold"],
-            "material_present_threshold": study["rules"]["material_present_threshold"],
-            "blocks": blocks,
-        }
+        plan = _plan(
+            study, audits, f"P{p:02d}", (p - 1) % len(ARMS), np.random.default_rng([seed, p])
+        )
         (plans / f"P{p:02d}.json").write_text(json.dumps(plan, indent=2) + "\n")
+    pilot = _plan(study, audits, PILOT, 0, np.random.default_rng([seed, 0]))
+    (plans / f"{PILOT}.json").write_text(json.dumps(pilot, indent=2) + "\n")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
