@@ -962,33 +962,35 @@ ground truth.
 
 BeltWatch is complete when it can be demonstrated that:
 
-- [ ] Real data is obtained through a documented, reproducible process.
-- [ ] Dataset release, checksums, attribution, and licensing discrepancies are recorded.
-- [ ] Images and annotations are validated, with failures quarantined.
-- [ ] The dataset and split manifests are versioned.
-- [ ] Duplicate and sequence-leakage risks have been investigated.
-- [ ] Preprocessing is shared between training and serving.
-- [ ] A credible classical baseline exists.
-- [ ] A deep-learning model meaningfully beats that baseline.
-- [ ] Experiments, configurations, and checkpoints are tracked.
-- [ ] Training is reproducible within a documented tolerance.
-- [ ] The model release includes preprocessing, labels, calibration, and review rules.
-- [ ] Final evaluation uses a protected held-out test set.
-- [ ] Per-class results, uncertainty, and relevant confidence intervals are reported.
-- [ ] Failure cases and domain limitations are documented.
-- [ ] Uncertain and unusable inputs receive appropriate handling.
-- [ ] A working application supports upload, inference, review, and export.
-- [ ] API jobs recover predictably from failures.
-- [ ] The application is containerized.
-- [ ] Automated tests cover important data, model, API, and recovery behavior.
-- [ ] CI/CD validates releases and deployment smoke tests.
-- [ ] Deployment or local reproduction instructions work from a fresh checkout.
-- [ ] Predictions and operational metrics include model provenance.
-- [ ] Basic monitoring and an investigation procedure exist.
-- [ ] Human feedback is reviewed before entering training data.
-- [ ] Inference latency, throughput, and memory are measured.
-- [ ] User value is evaluated through review time and detection performance.
-- [ ] The README explains the problem, architecture, data, evaluation, limitations, and usage.
+_Status as of 2026-10-17 (release `beltwatch-0.1.0`)._
+
+- [x] Real data is obtained through a documented, reproducible process.
+- [x] Dataset release, checksums, attribution, and licensing discrepancies are recorded.
+- [x] Images and annotations are validated, with failures quarantined.
+- [x] The dataset and split manifests are versioned.
+- [x] Duplicate and sequence-leakage risks have been investigated.
+- [x] Preprocessing is shared between training and serving.
+- [x] A credible classical baseline exists.
+- [x] A deep-learning model meaningfully beats that baseline.
+- [x] Experiments, configurations, and checkpoints are tracked.
+- [x] Training is reproducible within a documented tolerance. (3 seeds of the finalist span 0.29 pp of foreground macro IoU against the 2 pp tolerance)
+- [x] The model release includes preprocessing, labels, calibration, and review rules.
+- [x] Final evaluation uses a protected held-out test set.
+- [x] Per-class results, uncertainty, and relevant confidence intervals are reported.
+- [x] Failure cases and domain limitations are documented.
+- [x] Uncertain and unusable inputs receive appropriate handling.
+- [x] A working application supports upload, inference, review, and export.
+- [x] API jobs recover predictably from failures.
+- [x] The application is containerized.
+- [x] Automated tests cover important data, model, API, and recovery behavior.
+- [ ] CI/CD validates releases and deployment smoke tests. Partial: CI deploys, smoke-tests, switches and rolls back on every serving change; release validation (val re-score, parity, benchmark) runs in the Kaggle `release` session, because CI has neither the dataset nor the weights.
+- [x] Deployment or local reproduction instructions work from a fresh checkout.
+- [x] Predictions and operational metrics include model provenance.
+- [x] Basic monitoring and an investigation procedure exist.
+- [x] Human feedback is reviewed before entering training data. (tooling in `beltwatch.data.feedback`; no consented feedback exists yet)
+- [x] Inference latency, throughput, and memory are measured. (on a Kaggle 4-core CPU; the documented 4 vCPU / 8 GB host is still pending)
+- [ ] User value is evaluated through review time and detection performance. Open: detection performance is reported; review time needs the usability study, which has not been run.
+- [x] The README explains the problem, architecture, data, evaluation, limitations, and usage.
 
 ### Summary
 
