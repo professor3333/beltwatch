@@ -1,0 +1,8 @@
+.study-grid { display: grid; grid-template-columns: 3fr minmax(260px, 1fr); gap: 1.25rem; margin-top: .6rem; }
+@media (max-width: 860px) { .study-grid { grid-template-columns: 1fr; } }
+.study-image img { width: 100%; height: auto; border-radius: var(--radius); border: 1px solid var(--line); display: block; }
+fieldset { border: 1px solid var(--line); border-radius: var(--radius); margin: 0 0 .9rem; padding: .6rem .9rem; display: grid; gap: .3rem; }
+legend { font-weight: 600; padding: 0 .3rem; }
+.coverage-list { list-style: none; padding: 0; margin: .3rem 0; display: grid; gap: .2rem; }
+#view-tabs button[aria-pressed=true] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+#intro-text p { margin: .4rem 0; }

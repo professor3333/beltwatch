@@ -6,6 +6,7 @@ data/processed/
 data/quarantine/
 data/external/
 data/feedback/
+data/study/
 *.zip
 *.tar
 *.tar.gz
