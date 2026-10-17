@@ -97,7 +97,11 @@ judge region boundaries.
 > discarded. Do you agree to take part?
 
 Only an anonymous code (P01, P02, …) is stored. A participant who stops, or
-who withdraws later, is excluded and their file deleted.
+who withdraws later, is excluded and their file deleted, along with the copy
+the page keeps in the browser ("Discard it" on the setup screen).
+
+Plan files are for participants only. Anything else (trying the page,
+checking the setup) uses `plans/PILOT.json`.
 
 ## Pilot session
 
@@ -142,6 +146,13 @@ trials answered (2 practice + 20 per block), no zero or missing times.
 - **Instructions and page:** the developer reported nothing confusing and
   nothing in the way, so the instructions are unchanged.
 
+- **Discarded run (2026-10-17):** the developer then ran a test session on
+  `plans/P01.json`. It was discarded without looking at any answers or
+  outcomes: the file was moved to `data/study/study-1/excluded/`, which the
+  analysis never reads, and the browser copy discarded. P01 is still unused
+  and goes to the first real participant, so the counterbalancing is
+  unchanged.
+
 Per-condition decision times are not compared here: the developer's times
 measure their knowledge of the model, not BeltWatch.
 
@@ -149,6 +160,18 @@ measure their knowledge of the model, not BeltWatch.
 
 Run by `python -m beltwatch.study.analyze`. Fixed now and not changed after
 seeing results.
+
+**Stopping rule** (declared 2026-10-17, before any participant session):
+
+- The target is **8 completed sessions**, two full cycles of the four
+  counterbalanced arms.
+- The outcome analysis runs **once**, when recruitment ends. Before then,
+  results files are only checked for validity (complete, right arm, every
+  image answered). No time, recall or other outcome figure is computed.
+- If recruitment ends before 8 sessions, the analysis runs once on every
+  completed session, as long as there are at least 5. The result is reported
+  with the number of sessions per arm and flagged as unbalanced. When to stop
+  never depends on results.
 
 - **Unit:** completed sessions only. Incomplete sessions are excluded and
   counted.
