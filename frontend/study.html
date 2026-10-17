@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BeltWatch usability study</title>
+  <meta name="description" content="Usability study session: unaided and BeltWatch-assisted review.">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="study.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">◧</span>
+      <div>
+        <h1>BeltWatch usability study</h1>
+        <p class="tagline">Review unwanted materials in a paper-recycling stream.</p>
+      </div>
+    </div>
+    <span id="progress" class="hint" aria-live="polite"></span>
+  </header>
+
+  <main>
+    <section id="setup-view" class="card">
+      <h2>Facilitator: load the participant's plan</h2>
+      <p class="meta">Choose <code>plans/P0n.json</code> from the study folder. Read the consent
+        script (docs/usability_study.md) before starting.</p>
+      <div class="row"><input id="plan-file" type="file" accept="application/json,.json"></div>
+      <p id="saved-session" class="meta hidden"></p>
+      <p id="setup-error" class="error" role="alert"></p>
+    </section>
+
+    <section id="intro-view" class="card hidden">
+      <h2 id="intro-title"></h2>
+      <div id="intro-text"></div>
+      <div class="row"><button id="start-block" class="primary" type="button">Start</button></div>
+    </section>
+
+    <section id="trial-view" class="card hidden" aria-labelledby="trial-title">
+      <div class="row spread">
+        <h2 id="trial-title"></h2>
+        <div id="view-tabs" class="row hidden" role="group" aria-label="Image view">
+          <button type="button" data-view="overlay">Overlay</button>
+          <button type="button" data-view="original">Original</button>
+          <button type="button" data-view="uncertainty">Uncertainty</button>
+        </div>
+      </div>
+      <div class="study-grid">
+        <div class="study-image">
+          <p id="loading" class="meta">Loading image…</p>
+          <img id="trial-image" alt="Conveyor snapshot under review">
+        </div>
+        <form id="answer-form">
+          <div id="assist-panel" class="hidden">
+            <h3>BeltWatch suggestion</h3>
+            <p id="suggestion-text" class="meta"></p>
+            <ul id="coverage-list" class="coverage-list"></ul>
+            <p id="reasons-text" class="hint"></p>
+            <p class="hint">Estimated visible coverage: pixels predicted as a material in the
+              image, not contamination by weight. A "no follow-up" suggestion does not certify
+              that the image is clean.</p>
+          </div>
+          <fieldset>
+            <legend>Does this image need follow-up?</legend>
+            <p class="hint">Yes if unwanted material appears to cover more than about 5% of the image.</p>
+            <label><input type="radio" name="follow_up" value="yes"> Yes, follow up</label>
+            <label><input type="radio" name="follow_up" value="no"> No</label>
+          </fieldset>
+          <fieldset>
+            <legend>Which materials are present?</legend>
+            <label><input type="checkbox" name="materials" value="cardboard"> Cardboard</label>
+            <label><input type="checkbox" name="materials" value="soft_plastic"> Soft plastic</label>
+            <label><input type="checkbox" name="materials" value="rigid_plastic"> Rigid plastic</label>
+            <label><input type="checkbox" name="materials" value="metal"> Metal</label>
+          </fieldset>
+          <div class="row"><button id="submit-answer" class="primary" type="submit" disabled>Next image</button></div>
+          <p id="trial-error" class="error" role="alert"></p>
+        </form>
+      </div>
+    </section>
+
+    <section id="done-view" class="card hidden">
+      <h2>Session complete. Thank you!</h2>
+      <p class="meta">Facilitator: download the results file and keep it with the study folder.</p>
+      <div class="row"><button id="download" class="primary" type="button">Download results</button></div>
+    </section>
+  </main>
+  <script src="study.js"></script>
+</body>
+</html>

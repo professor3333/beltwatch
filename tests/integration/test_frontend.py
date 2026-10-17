@@ -21,6 +21,17 @@ def test_ui_never_uses_inner_html_for_server_data() -> None:
     assert ".innerHTML" not in script and "insertAdjacentHTML" not in script
 
 
+def test_study_page_is_served_with_the_required_wording(client: TestClient) -> None:
+    page = client.get("/study.html")
+    assert page.status_code == 200
+    assert "not contamination by weight" in page.text
+    assert "does not certify" in page.text
+    for asset in ("/study.js", "/study.css"):
+        assert client.get(asset).status_code == 200
+    script = (Path(__file__).resolve().parents[2] / "frontend" / "study.js").read_text()
+    assert ".innerHTML" not in script and "insertAdjacentHTML" not in script
+
+
 def test_api_routes_take_precedence_over_static_files(client: TestClient) -> None:
     assert client.get("/health/live").json()["status"] == "alive"
 

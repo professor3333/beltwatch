@@ -989,7 +989,7 @@ _Status as of 2026-10-17 (release `beltwatch-0.1.0`)._
 - [x] Basic monitoring and an investigation procedure exist.
 - [x] Human feedback is reviewed before entering training data. (tooling in `beltwatch.data.feedback`; no consented feedback exists yet)
 - [x] Inference latency, throughput, and memory are measured. (on a Kaggle 4-core CPU; the documented 4 vCPU / 8 GB host is still pending)
-- [ ] User value is evaluated through review time and detection performance. Open: detection performance is reported; review time needs the usability study, which has not been run.
+- [ ] User value is evaluated through review time and detection performance. Open: detection performance is reported; the usability-study kit and declared analysis exist ([protocol](usability_study.md)), but no participant session has been run.
 - [x] The README explains the problem, architecture, data, evaluation, limitations, and usage.
 
 ### Summary

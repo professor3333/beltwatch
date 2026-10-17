@@ -20,7 +20,7 @@ Semantic segmentation · visible-coverage estimation · uncertainty-aware review
 > split: foreground macro IoU **0.336**, 18.4 points above the tuned random
 > forest. It **misses** the proposed 0.40 target and the review-workload
 > target. See [Results](#results). The pipeline, the audit service and the
-> deployment are built and tested (304 tests).
+> deployment are built and tested (311 tests).
 
 ## Architecture
 
@@ -199,7 +199,8 @@ bootstrap over the 5 test recording sequences.
 | Fresh-checkout reproduction | Checked 2026-10-17: clone → `uv sync` → tests → service with the all-background and the `beltwatch-0.1.0` bundles |
 | Ablations and 3-seed finalists | Done for loss, crop sampling and class weights (none adopted); 3 seeds of the finalist. Inference resolution not run |
 | Locked test-set evaluation of a declared release | Done once, for `beltwatch-0.1.0` ([results](#results)) |
-| Staged robustness dataset, usability study, hosted demo, ONNX/INT8 | Not started |
+| Usability-study kit (protocol, matched val sets, study page, declared analysis) | Built, tested, dry-run with scripted sessions; **no participant sessions yet** ([protocol](docs/usability_study.md)) |
+| Staged robustness dataset, hosted demo, ONNX/INT8 | Not started |
 
 The full plan, targets, and Definition of Done are in
 [`docs/design.md`](docs/design.md). The GPU steps are in the
@@ -369,6 +370,18 @@ restarting the worker. CI builds the image and performs a
 real deployment, release switch, and rollback on every change to the serving
 code.
 
+### Running the usability study
+
+The protocol, consent script and declared analysis are in
+[`docs/usability_study.md`](docs/usability_study.md). In short:
+
+```bash
+uv run python -m beltwatch.study.prepare --out data/study/study-1          # matched val sets
+uv run python -m beltwatch.study.submit data/study/study-1 --participants 8  # through the API
+# per participant: open http://localhost:8000/study.html and load plans/P0n.json
+uv run python -m beltwatch.study.analyze data/study/study-1 --results results-P*.json --out reports/study-1
+```
+
 ### Getting the data
 
 The data pipeline is defined in [`dvc.yaml`](dvc.yaml) and run with
@@ -411,8 +424,9 @@ scripts/benchmark.py     CPU latency, throughput, and memory of a release
 src/beltwatch/api/       FastAPI application and settings
 src/beltwatch/jobs/      SQLite job store, per-image pipeline, inference worker
 src/beltwatch/review/    Review policy (routing, priority, random audits)
+src/beltwatch/study/     Usability study: set selection, submission, declared analysis
 src/beltwatch/release/   Versioned, checksummed release bundles, declarations, and runtime parity
-frontend/                Review UI (static HTML/CSS/JS, no external dependencies)
+frontend/                Review UI and usability-study page (static HTML/CSS/JS, no external dependencies)
 Dockerfile, compose.yaml, docker/   Serving image, Compose stack, Caddy and Prometheus config
 scripts/deploy_smoke.py  Deployment smoke test (standard library only)
 scripts/soak_test.py     Reliability soak test: many audits, worker kills, duplicate checks
@@ -429,6 +443,7 @@ docs/training.md         GPU training runbook
 docs/architecture.md     Service architecture, failure handling, data model
 docs/operations.md       Deploy, release, rollback, backup, monitoring
 docs/error_analysis.md   Error report contents and findings log
+docs/usability_study.md  Usability-study protocol and declared analysis
 THIRD_PARTY_NOTICES.md   Dataset and model licensing
 ```
 
