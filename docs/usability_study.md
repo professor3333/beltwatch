@@ -173,13 +173,13 @@ A missed target is reported as missed. No other metric replaces it.
 # 1. Select the two sets and practice images from val, and copy the frames.
 uv run python -m beltwatch.study.prepare --out data/study/study-1
 
-# 2. Start the service with a long retention (sessions can span days), then
-#    submit the images as audits and write one plan per participant.
-BELTWATCH_RETENTION_HOURS=720 uv run uvicorn beltwatch.api.app:create_app --factory --port 8000
-BELTWATCH_RETENTION_HOURS=720 uv run python -m beltwatch.jobs.worker
-uv run python -m beltwatch.study.submit data/study/study-1 --base-url http://localhost:8000 --participants 8
+# 2. Each session: start the API and worker, submit the study (the first
+#    time) or check the recorded audits (every later time), and write one plan
+#    per participant. Uploads are kept 30 days (BELTWATCH_RETENTION_HOURS=720)
+#    because sessions can span days. Ctrl-C stops the service.
+uv run python -m beltwatch.study.session data/study/study-1 [--port 8000]
 
-# 3. Each session: open http://localhost:8000/study.html and load plans/P0n.json.
+# 3. Open http://127.0.0.1:8000/study.html and load plans/P0n.json.
 
 #    The developer's protocol check uses plans/PILOT.json; summarise it with
 uv run python -m beltwatch.study.analyze data/study/study-1 --results results-PILOT.json --pilot
@@ -188,6 +188,15 @@ uv run python -m beltwatch.study.analyze data/study/study-1 --results results-PI
 uv run python -m beltwatch.study.analyze data/study/study-1 --results results-P*.json \
     --out reports/study-1
 ```
+
+Every participant must see the same audits on the same release. After the
+first submission, `session` (and `submit`) replays the recorded audits and
+**refuses** if the service returns different ones, for example because the
+audits expired after 30 days or another database is in use. Sessions already
+run cannot be mixed with new audits, so the study then restarts from a new
+folder. The manual equivalent of `session` is the API and worker started with
+`BELTWATCH_RETENTION_HOURS=720`, then `python -m beltwatch.study.submit
+data/study/study-1 --participants 8`.
 
 `data/study/` holds dataset frames and is never committed. On a machine
 without the extracted archive, fetch only the selected val frames (their

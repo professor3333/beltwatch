@@ -20,7 +20,7 @@ Semantic segmentation · visible-coverage estimation · uncertainty-aware review
 > split: foreground macro IoU **0.336**, 18.4 points above the tuned random
 > forest. It **misses** the proposed 0.40 target and the review-workload
 > target. See [Results](#results). The pipeline, the audit service and the
-> deployment are built and tested (311 tests).
+> deployment are built and tested (315 tests).
 
 ## Architecture
 
@@ -377,8 +377,8 @@ The protocol, consent script and declared analysis are in
 
 ```bash
 uv run python -m beltwatch.study.prepare --out data/study/study-1          # matched val sets
-uv run python -m beltwatch.study.submit data/study/study-1 --participants 8  # through the API
-# per participant: open http://localhost:8000/study.html and load plans/P0n.json
+uv run python -m beltwatch.study.session data/study/study-1  # API + worker, submit, plans
+# per participant: open http://127.0.0.1:8000/study.html and load plans/P0n.json; Ctrl-C after
 uv run python -m beltwatch.study.analyze data/study/study-1 --results results-P*.json --out reports/study-1
 ```
 
@@ -424,7 +424,7 @@ scripts/benchmark.py     CPU latency, throughput, and memory of a release
 src/beltwatch/api/       FastAPI application and settings
 src/beltwatch/jobs/      SQLite job store, per-image pipeline, inference worker
 src/beltwatch/review/    Review policy (routing, priority, random audits)
-src/beltwatch/study/     Usability study: set selection, submission, declared analysis
+src/beltwatch/study/     Usability study: set selection, submission, session launcher, declared analysis
 src/beltwatch/release/   Versioned, checksummed release bundles, declarations, and runtime parity
 frontend/                Review UI and usability-study page (static HTML/CSS/JS, no external dependencies)
 Dockerfile, compose.yaml, docker/   Serving image, Compose stack, Caddy and Prometheus config
