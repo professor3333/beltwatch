@@ -139,6 +139,9 @@ trials answered (2 practice + 20 per block), no zero or missing times.
   measure exists to report. The assisted condition is left as declared,
   and the page already says to check the suggestion against the image.
 
+- **Instructions and page:** the developer reported nothing confusing and
+  nothing in the way, so the instructions are unchanged.
+
 Per-condition decision times are not compared here: the developer's times
 measure their knowledge of the model, not BeltWatch.
 
