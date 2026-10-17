@@ -3,6 +3,7 @@ import io
 import json
 import struct
 import zlib
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -155,9 +156,22 @@ def test_metrics_and_token(settings: Settings, worker: Worker) -> None:
     with TestClient(create_app(settings)) as c:
         text = c.get("/metrics").text
         assert "beltwatch_queue_length" in text and "beltwatch_live_workers 1.0" in text
+        assert 'beltwatch_live_workers_by_release{model_version="none"} 1.0' in text
+        info = next(x for x in text.splitlines() if x.startswith("beltwatch_model_release_info{"))
+        assert 'model_version="test-1"' in info and 'model_kind="all-background"' in info
+        assert 'preprocessing_version="pp-1"' in info and 'review_policy_version="' in info
+        assert info.endswith(" 1.0")
     with TestClient(create_app(settings.model_copy(update={"metrics_token": "s3cret"}))) as c:
         assert c.get("/metrics").status_code == 401
         assert c.get("/metrics", headers={"Authorization": "Bearer s3cret"}).status_code == 200
+
+
+def test_metrics_without_a_usable_release(settings: Settings, tmp_path: Path) -> None:
+    broken = settings.model_copy(update={"releases_dir": tmp_path / "no-releases"})
+    with TestClient(create_app(broken)) as c:
+        text = c.get("/metrics").text
+        assert "beltwatch_queue_length" in text
+        assert "beltwatch_model_release_info{" not in text
 
 
 def test_feedback_rules_and_corrected_masks(client: TestClient, worker: Worker) -> None:
