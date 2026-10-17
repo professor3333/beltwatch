@@ -150,11 +150,48 @@ class _StoreCollector(Collector):
             "Age of the oldest pending audit",
             value=self.store.oldest_pending_age(),
         )
+        workers = self.store.live_workers(self.settings.worker_stale_seconds)
         yield GaugeMetricFamily(
-            "beltwatch_live_workers",
-            "Workers with a recent heartbeat",
-            value=len(self.store.live_workers(self.settings.worker_stale_seconds)),
+            "beltwatch_live_workers", "Workers with a recent heartbeat", value=len(workers)
         )
+        by_release = GaugeMetricFamily(
+            "beltwatch_live_workers_by_release",
+            "Workers with a recent heartbeat, by the model release they have loaded",
+            labels=["model_version"],
+        )
+        loaded: dict[str, int] = {}
+        for w in workers:
+            key = w["model_version"] or "none"
+            loaded[key] = loaded.get(key, 0) + 1
+        for version, count in sorted(loaded.items()):
+            by_release.add_metric([version], count)
+        yield by_release
+        try:
+            m = load_active_release(self.settings.releases_dir).manifest
+        except ReleaseError:
+            return  # /health/ready reports the missing release
+        info = GaugeMetricFamily(
+            "beltwatch_model_release_info",
+            "Active model release that new audits are pinned to (value is always 1)",
+            labels=[
+                "model_version",
+                "model_kind",
+                "model_sha256",
+                "preprocessing_version",
+                "review_policy_version",
+            ],
+        )
+        info.add_metric(
+            [
+                m.version,
+                m.model.kind,
+                m.model.sha256 or "none",
+                m.preprocessing_version,
+                m.review_policy.version,
+            ],
+            1,
+        )
+        yield info
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:

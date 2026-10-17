@@ -78,7 +78,11 @@ mostly preserve audit records and feedback.
 `/metrics` (Prometheus format, bearer token when `BELTWATCH_METRICS_TOKEN` is
 set) exposes request counts and latency per route, rejected uploads by reason,
 queue length, the age of the oldest pending audit, and the number of live
-workers. Each audit records per-image processing time, quality flags,
+workers. `beltwatch_model_release_info` (value 1) carries the provenance of the
+active release in its labels: version, model kind, weights SHA-256,
+preprocessing version and review-policy version.
+`beltwatch_live_workers_by_release` counts workers by the release they have
+loaded, so a worker still serving an old bundle after a switch shows up. Each audit records per-image processing time, quality flags,
 uncertainty, and routing, which the JSON report and the database expose for
 model monitoring by camera and model version.
 
@@ -86,6 +90,7 @@ model monitoring by camera and model version.
 |---|---|
 | Oldest pending audit keeps growing | Worker capacity, worker logs, `beltwatch_live_workers` |
 | `/health/ready` is 503 | The `checks` field: database, model release, workers |
+| `beltwatch_live_workers_by_release` shows a version other than `beltwatch_model_release_info` | Restart the worker so it loads the active bundle; jobs keep the release they were pinned to |
 | Rising `retake_image` routing | Camera focus, lighting, lens cleanliness |
 | Shift in predicted plastic coverage | Both the actual material mix and model behaviour; review a random sample |
 | More reviewer disagreement | Collect a representative labelled sample and re-evaluate |
