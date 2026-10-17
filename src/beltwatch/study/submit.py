@@ -11,6 +11,10 @@ The assisted condition therefore shows live results of the active release.
 Writes ``audits.json``, ``plans/P01.json`` ... and ``plans/PILOT.json`` (a
 protocol check that the analysis never includes). The plans hold image IDs
 and display order only, never ground truth. See docs/usability_study.md.
+
+Once ``audits.json`` exists, a later run must replay exactly the recorded
+audits on the recorded release; otherwise (the audits expired, or the
+service was reset) it refuses, so every participant sees the same results.
 """
 
 import argparse
@@ -123,6 +127,7 @@ def submit_study(
         if audit["status"] != "complete":
             raise StudyError(f"audit {entry['audit_id']} ended {audit['status']}; check the worker")
         entry["model_version"] = audit["model_version"]
+        entry["expires_at"] = audit["expires_at"]
         by_name = {Path(i["file"]).name: i["study_id"] for i in study["images"]}
         for item in audit["images"]:
             result = call(
@@ -137,6 +142,9 @@ def submit_study(
                 ),
             }
         entry["review_queue"] = audit["review_queue"]
+    recorded = study_dir / AUDITS_FILE
+    if recorded.is_file():
+        _check_unchanged(json.loads(recorded.read_text())["audits"], audits)
     record = {
         "study": study["name"],
         "submitted_at": datetime.now(UTC).isoformat(timespec="seconds"),
@@ -145,6 +153,28 @@ def submit_study(
     (study_dir / AUDITS_FILE).write_text(json.dumps(record, indent=2) + "\n")
     write_plans(study_dir, study, audits, participants)
     return record
+
+
+def _check_unchanged(recorded: dict[str, Any], replayed: dict[str, Any]) -> None:
+    """Refuse when the service no longer returns the audits that sessions were run on."""
+    problems = []
+    for set_name, old in recorded.items():
+        new = replayed.get(set_name)
+        if new is None:
+            problems.append(f"{set_name}: missing")
+            continue
+        for field in ("audit_id", "model_version"):
+            if old[field] != new[field]:
+                problems.append(f"{set_name}: {field} {old[field]} -> {new[field]}")
+        if sorted(old["images"]) != sorted(new["images"]):
+            problems.append(f"{set_name}: different image IDs")
+    if problems:
+        raise StudyError(
+            "the service no longer returns the recorded study audits ("
+            + "; ".join(problems)
+            + "). Sessions already run used the recorded ones, so this study cannot "
+            "continue on new audits or another release; prepare a new study folder."
+        )
 
 
 def _assisted_order(entry: dict[str, Any]) -> list[str]:

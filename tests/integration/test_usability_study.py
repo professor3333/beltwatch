@@ -1,18 +1,25 @@
 import csv
 import hashlib
 import json
+import os
 import re
+import socket
+import urllib.request
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
 
+from beltwatch.api.settings import Settings
 from beltwatch.jobs.worker import Worker
 from beltwatch.study.analyze import analyze, pilot_summary
 from beltwatch.study.prepare import StudyError, load_study, prepare_study
+from beltwatch.study.session import run_session
 from beltwatch.study.submit import ARMS, submit_study
 from tests.integration.conftest import png_bytes
+from tests.integration.test_deploy_smoke import free_port
 
 PX = ("background", "cardboard", "soft_plastic", "rigid_plastic", "metal")
 TOTAL_PX = 10_000
@@ -300,3 +307,64 @@ def test_pilot_is_planned_but_never_analysed(
     assert "recall" not in json.dumps(summary)  # timing only, by design
     with pytest.raises(StudyError, match="not a pilot"):
         pilot_summary(real)
+
+
+def test_submit_refuses_to_replace_the_recorded_audits(
+    study_dir: Path, client: TestClient, worker: Worker
+) -> None:
+    transport = client_transport(client, worker)
+    submit_study(study_dir, transport, participants=1, poll_seconds=0)
+    recorded = (study_dir / "audits.json").read_text()
+    # The audits expire (or the service is reset): a replay would create new ones.
+    audit_id = json.loads(recorded)["audits"]["A"]["audit_id"]
+    assert client.delete(f"/v1/audits/{audit_id}").status_code < 300
+    with pytest.raises(StudyError, match="A: audit_id"):
+        submit_study(study_dir, transport, participants=1, poll_seconds=0)
+    assert (study_dir / "audits.json").read_text() == recorded
+
+
+def test_session_starts_the_service_and_writes_plans(
+    study_dir: Path, settings: Settings, tmp_path: Path
+) -> None:
+    env = {
+        **os.environ,
+        "BELTWATCH_DATA_DIR": str(tmp_path / "session-var"),
+        "BELTWATCH_RELEASES_DIR": str(settings.releases_dir),
+    }
+    seen: dict[str, Any] = {}
+
+    def during_session(base_url: str, record: dict[str, Any]) -> None:
+        with urllib.request.urlopen(base_url + "/study.html", timeout=10) as resp:
+            seen["page"] = resp.status
+        audit = record["audits"]["A"]["audit_id"]
+        with urllib.request.urlopen(f"{base_url}/v1/audits/{audit}", timeout=10) as resp:
+            seen["expires_at"] = json.loads(resp.read())["expires_at"]
+
+    port = free_port()
+    record = run_session(study_dir, port=port, participants=2, env=env, wait=during_session)
+    assert seen["page"] == 200
+    assert {a["model_version"] for a in record["audits"].values()} == {"test-1"}
+    # The launcher keeps uploads for 30 days, not the 24 h demo default.
+    created = datetime.fromisoformat(record["submitted_at"])
+    assert datetime.fromisoformat(seen["expires_at"]) - created > timedelta(days=29)
+    assert sorted(p.name for p in (study_dir / "plans").iterdir()) == [
+        "P01.json",
+        "P02.json",
+        "PILOT.json",
+    ]
+    # Both processes are stopped afterwards.
+    with pytest.raises(OSError):
+        urllib.request.urlopen(f"http://127.0.0.1:{port}/health/live", timeout=2)
+    # A second session replays the same audits.
+    again = run_session(study_dir, port=port, participants=2, env=env, wait=lambda *_: None)
+    assert {k: v["audit_id"] for k, v in again["audits"].items()} == {
+        k: v["audit_id"] for k, v in record["audits"].items()
+    }
+
+
+def test_session_refuses_a_port_in_use(study_dir: Path) -> None:
+    with socket.socket() as busy:
+        busy.bind(("127.0.0.1", 0))
+        busy.listen()
+        with pytest.raises(StudyError, match="in use"):
+            run_session(study_dir, port=busy.getsockname()[1], wait=lambda *_: None)
