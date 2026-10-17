@@ -91,7 +91,7 @@ judge region boundaries.
 
 > This is a usability study of a software prototype, not a test of you. You
 > will look at about 44 photos of a recycling conveyor and answer two
-> questions for each. It takes about 20 minutes. I record only an anonymous
+> questions for each. It takes about 10 to 20 minutes. I record only an anonymous
 > participant code, your answers, and how long each answer took. No name, no
 > video, no audio. You can stop at any time, and your answers will then be
 > discarded. Do you agree to take part?
@@ -121,6 +121,26 @@ answers and times would measure that knowledge. The pilot therefore:
   participant. Any change is recorded here with the date, and the analysis
   above stays as declared;
 - rules the developer out as a study participant.
+
+### Pilot record
+
+Run on 2026-10-17 (`plans/PILOT.json`, arm 0). Mechanics: complete, all 44
+trials answered (2 practice + 20 per block), no zero or missing times.
+
+- **Session length:** 9.1 minutes, against "about 20 minutes" in the
+  consent script. The developer knows the task, so peers are expected to be
+  slower. **Change (2026-10-17):** the consent script now says "about 10 to
+  20 minutes". Nothing else in the protocol or the analysis changed.
+- **Warm-up:** the first analysed unaided trial was the longest (59 s). Kept
+  as declared (no trial exclusions; medians).
+- **Page use:** in the assisted block the original-photo and uncertainty views
+  were never opened, and answers were submitted within seconds. That is
+  the confirm-the-suggestion behaviour the "followed a wrong suggestion"
+  measure exists to report. The assisted condition is left as declared,
+  and the page already says to check the suggestion against the image.
+
+Per-condition decision times are not compared here: the developer's times
+measure their knowledge of the model, not BeltWatch.
 
 ## Declared analysis
 
@@ -207,6 +227,6 @@ paths are in the error that `prepare` prints) and pass `--raw-dir`.
 The kit was dry-run on 2026-10-17 against the `beltwatch-0.1.0` release:
 selection from the committed manifest, the 42 frames through the real audit
 path, two complete scripted sessions in headless Chromium (no console
-errors), and the analysis. That checks the mechanics only. **No participant
-session has been run, so there is no result yet.** The developer pilot
-(above) is pending.
+errors), and the analysis. The developer pilot ran the same day (see the
+pilot record). Both check the protocol only. **No participant session has
+been run, so there is no result yet.**
