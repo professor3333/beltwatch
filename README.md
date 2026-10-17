@@ -20,7 +20,7 @@ Semantic segmentation · visible-coverage estimation · uncertainty-aware review
 > split: foreground macro IoU **0.336**, 18.4 points above the tuned random
 > forest. It **misses** the proposed 0.40 target and the review-workload
 > target. See [Results](#results). The pipeline, the audit service and the
-> deployment are built and tested (299 tests).
+> deployment are built and tested (304 tests).
 
 ## Architecture
 
@@ -190,10 +190,13 @@ bootstrap over the 5 test recording sequences.
 | Temperature-scaling calibration (overall and foreground ECE) | Done: fitted on the calibration split; T 1.04 for the release |
 | Evaluation suite: foreground macro IoU, coverage MAE, review workload, group bootstrap | Built and tested |
 | Error-analysis report and CPU benchmark | Done on val ([findings](docs/error_analysis.md)); benchmark on Kaggle CPU, not yet on the documented host |
-| Audit service: durable jobs, leases, retries, idempotency, append-only feedback, reports | Built and tested; exercised live |
+| Audit service: durable jobs, leases, retries, idempotency, append-only feedback, reports | Built and tested; exercised live; 200-job soak test with worker kills |
+| Feedback → annotation review → training candidates | Built and tested; no consented feedback exists yet, so no dataset version uses it |
+| Monitoring: Prometheus metrics with active-release provenance, runbook | Built and tested |
 | Review UI | Built; exercised in a headless browser |
 | Versioned release bundles, activation, and rollback | Built; switch and rollback verified in CI |
 | Docker Compose deployment (HTTPS proxy, API, worker, Prometheus) | Built; deployed and smoke-tested in CI |
+| Fresh-checkout reproduction | Checked 2026-10-17: clone → `uv sync` → tests → service with the all-background and the `beltwatch-0.1.0` bundles |
 | Ablations and 3-seed finalists | Done for loss, crop sampling and class weights (none adopted); 3 seeds of the finalist. Inference resolution not run |
 | Locked test-set evaluation of a declared release | Done once, for `beltwatch-0.1.0` ([results](#results)) |
 | Staged robustness dataset, usability study, hosted demo, ONNX/INT8 | Not started |
@@ -306,9 +309,16 @@ and the [Colab](notebooks/train_colab.ipynb) or [Kaggle](notebooks/train_kaggle.
 ### Running the audit service
 
 ```bash
-# 1. Build and activate a model release (here from a trained U-Net)
-uv run python -m beltwatch.release.bundle --kind unet --version beltwatch-0.1.0 \
-    --model models/unet-resnet18-ce/best.pt --activate
+# 1. Build and activate a model release. Trained weights are not in the
+#    repository; to try the service without them, use the all-background
+#    sanity-check release (it never predicts a material):
+uv run python -m beltwatch.release.bundle --kind all-background --version demo \
+    --note "service check; not a trained model" --activate
+#    or, with a trained SegFormer-B0 checkpoint and its calibration
+#    (the way beltwatch-0.1.0 was built):
+uv run python -m beltwatch.release.bundle --kind segformer --version <v> \
+    --model models/segformer-b0-ce/best.pt \
+    --calibration reports/calibration-segformer/calibration.json --activate
 
 # 2. Start the API and the inference worker (two terminals)
 uv run uvicorn beltwatch.api.app:create_app --factory --port 8000
@@ -327,6 +337,20 @@ queue (overlay, original, and uncertainty views with estimated visible
 coverage), record decisions, and export the audit record. Interactive API
 docs are at `http://localhost:8000/docs`. The endpoints, failure handling, and
 data model are described in [`docs/architecture.md`](docs/architecture.md).
+
+Reviewer feedback reaches training data only through annotation review, and
+only from audits created with `"training_consent": true`:
+
+```bash
+uv run python -m beltwatch.data.feedback export --data-dir var --out data/feedback/<batch>
+uv run python -m beltwatch.data.feedback review data/feedback/<batch> <image_id> \
+    --decision accept --annotator <name> --reason "<why>"
+uv run python -m beltwatch.data.feedback eligible data/feedback/<batch>
+```
+
+Only accepted candidates with a corrected pixel mask are eligible for a
+dataset version; a confirmation is an image-level label and does not validate
+the predicted pixels.
 
 ### Deploying with Docker Compose
 
