@@ -91,13 +91,21 @@ $("plan-file").addEventListener("change", async (event) => {
     if (saved) {
       const note = $("saved-session");
       note.replaceChildren(
-        document.createTextNode(`A ${saved.completed ? "complete" : "incomplete"} session for ${plan.participant} is saved in this browser. `),
+        document.createTextNode(`${saved.completed ? "A complete" : "An incomplete"} session for ${plan.participant} is saved in this browser. `),
       );
       const button = document.createElement("button");
       button.type = "button";
       button.textContent = "Download it";
       button.addEventListener("click", () => download(saved));
-      note.append(button);
+      const discard = document.createElement("button");
+      discard.type = "button";
+      discard.textContent = "Discard it";
+      discard.addEventListener("click", () => {
+        if (!window.confirm(`Delete the saved ${plan.participant} session from this browser? This cannot be undone.`)) return;
+        try { localStorage.removeItem(storageKey(plan)); } catch { /* storage unavailable: nothing saved */ }
+        note.replaceChildren(document.createTextNode(`Saved ${plan.participant} session discarded.`));
+      });
+      note.append(button, " ", discard);
       note.classList.remove("hidden");
     }
     state.trials = buildTrials(plan);
