@@ -128,6 +128,7 @@ class Soak:
         self.rng = random.Random(seed)
         self.retries = 0
         self.replays: list[bool] = []
+        self.cache_hits = 0
 
     def create(self, index: int, replay: bool) -> tuple[str, float]:
         """Create audit ``index``, retrying while the service asks to; returns (id, submit time)."""
@@ -166,6 +167,8 @@ class Soak:
             problems.append(f"{audit_id}: {len(images)} image results")
         if audit["status"] == "complete":
             image_id = images[0]["image_id"]
+            _, detail = self.smoke.json("GET", f"/v1/audits/{audit_id}/images/{image_id}")
+            self.cache_hits += bool(detail.get("cache_hit"))
             status, _, data = self.smoke.request(
                 "GET", f"/v1/audits/{audit_id}/artifacts/overlay_{image_id}"
             )
@@ -306,6 +309,8 @@ def main(argv: list[str] | None = None) -> int:
         "database_checks": counts,
         "idempotent_replays": {"sent": len(soak.replays), "same_audit": sum(soak.replays)},
         "create_retries": soak.retries,
+        # Served from the result cache: their times do not include inference.
+        "cache_hits": soak.cache_hits,
         "worker_kills": worker.kills if worker else 0,
         "audits_claimed_more_than_once": reclaimed,
         "seconds_to_finish": {"p50": percentile(times, 0.5), "p95": percentile(times, 0.95)},

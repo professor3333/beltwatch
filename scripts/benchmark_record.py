@@ -15,7 +15,9 @@ Usage::
 
 The engineering targets (p95, throughput, worker memory) are judged on the
 in-container benchmark, as on Kaggle; the end-to-end times also include the
-upload, the queue and status polling, and are reported alongside.
+upload, the queue and status polling, and are reported alongside. A run with
+audits served from the result cache is refused: its times would not include
+inference.
 """
 
 import argparse
@@ -91,7 +93,7 @@ def memory_peaks(directory: Path) -> dict[str, float | None]:
 
 
 def end_to_end(summary: dict[str, Any]) -> dict[str, Any]:
-    keys = ("audits", "in_flight", "by_status", "success_rate", "seconds_to_finish")
+    keys = ("audits", "in_flight", "by_status", "success_rate", "seconds_to_finish", "cache_hits")
     return {
         **{k: summary[k] for k in keys},
         "audits_per_second": round(summary["audits_per_second"], 4),
@@ -146,6 +148,8 @@ def main(argv: list[str] | None = None) -> int:
     for item in args.end_to_end:
         name, _, path = item.partition("=")
         runs[name] = read_json(Path(path))
+        if runs[name]["cache_hits"]:
+            parser.error(f"{name}: {runs[name]['cache_hits']} audits served from the result cache")
     result = record(
         read_json(args.benchmark),
         runs,

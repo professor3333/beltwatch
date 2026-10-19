@@ -48,6 +48,13 @@ def test_soak_passes_against_a_live_service(
     assert summary["idempotent_replays"] == {"sent": 4, "same_audit": 4}
     assert summary["database_checks"] == dict.fromkeys(summary["database_checks"], 0)
     assert summary["audits_claimed_more_than_once"] == 0
+    assert summary["cache_hits"] == 0
+
+    # The same seed repeats the regions, so every audit is served from the cache.
+    again = tmp_path / "again.json"
+    args = ["--base-url", live_service, "--audits", "12", "--replay-every", "0"]
+    assert soak.main([*args, "--timeout", "120", "--out", str(again)]) == 0
+    assert soak.json.loads(again.read_text())["cache_hits"] == 12
 
 
 def test_regions_are_distinct_and_normalized() -> None:
