@@ -22,6 +22,7 @@ import json
 import os
 import platform
 import resource
+import subprocess
 import sys
 import time
 from collections.abc import Sequence
@@ -46,6 +47,39 @@ TARGETS = {"p95_seconds": 3.0, "images_per_second": 0.5, "peak_rss_mb": 2048.0}
 def peak_rss_mb() -> float:
     peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     return peak / 1e6 if sys.platform == "darwin" else peak / 1024  # bytes on macOS, KiB on Linux
+
+
+def cpu_model() -> str:
+    """The processor's model name, so a reader can tell which CPU a timing comes from."""
+    cpuinfo = Path("/proc/cpuinfo")
+    if cpuinfo.exists():
+        for line in cpuinfo.read_text().splitlines():
+            if line.startswith("model name"):
+                return line.split(":", 1)[1].strip()
+    if sys.platform == "darwin":
+        result = subprocess.run(
+            ["sysctl", "-n", "machdep.cpu.brand_string"], capture_output=True, text=True
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+    return platform.processor() or "unknown"
+
+
+def memory_total_mb() -> float | None:
+    try:
+        return round(os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES") / 2**20, 1)
+    except (ValueError, OSError, AttributeError):
+        return None
+
+
+def cgroup_limits(root: Path = Path("/sys/fs/cgroup")) -> dict[str, str] | None:
+    """The cgroup v2 CPU and memory limits of this process (in a container), if any."""
+    limits = {
+        name: (root / name).read_text().strip()
+        for name in ("cpu.max", "memory.max")
+        if (root / name).is_file()
+    }
+    return limits or None
 
 
 def synthetic_frames(
@@ -145,7 +179,10 @@ def run_benchmark(
         "hardware": {
             "platform": platform.platform(),
             "machine": platform.machine(),
+            "cpu_model": cpu_model(),
             "cpu_count": os.cpu_count(),
+            "memory_total_mb": memory_total_mb(),
+            "cgroup_limits": cgroup_limits(),
             "torch_threads": torch.get_num_threads(),
             "torch_version": str(torch.__version__),
         },
@@ -186,3 +223,7 @@ def main(argv: list[str] | None = None) -> int:
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(text + "\n")
     return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

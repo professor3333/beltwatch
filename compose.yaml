@@ -4,7 +4,10 @@
 name: beltwatch
 
 x-app: &app
-  build: .
+  build:
+    context: .
+    args:
+      BELTWATCH_GIT_COMMIT: ${BELTWATCH_GIT_COMMIT:-unknown}
   image: beltwatch:${BELTWATCH_IMAGE_TAG:-local}
   restart: unless-stopped
   volumes:

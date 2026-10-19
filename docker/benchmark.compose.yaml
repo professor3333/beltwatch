@@ -1,0 +1,23 @@
+# Resource limits for the host benchmark (.github/workflows/benchmark.yml), on
+# top of compose.yaml: the whole stack fits the planning host of 4 vCPU and
+# 8 GB RAM (limits add up to 5.5 GB; the worker keeps its 3 GB from compose.yaml).
+#   docker compose -f compose.yaml -f docker/benchmark.compose.yaml up -d
+services:
+  api:
+    deploy:
+      resources:
+        limits:
+          cpus: "4"
+          memory: 2g
+  worker:
+    deploy:
+      resources:
+        limits:
+          cpus: "4"
+          memory: 3g
+  proxy:
+    deploy:
+      resources:
+        limits:
+          cpus: "4"
+          memory: 512m

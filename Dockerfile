@@ -31,5 +31,10 @@ ENV PATH=/app/.venv/bin:$PATH \
     BELTWATCH_RELEASES_DIR=/releases \
     BELTWATCH_FRONTEND_DIR=/app/frontend
 
+# The commit the image was built from, for outputs written inside the container
+# (the image has no .git). Last, so a new commit does not invalidate the layers above.
+ARG BELTWATCH_GIT_COMMIT=unknown
+ENV BELTWATCH_GIT_COMMIT=$BELTWATCH_GIT_COMMIT
+
 EXPOSE 8000
 CMD ["uvicorn", "beltwatch.api.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]

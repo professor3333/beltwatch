@@ -224,6 +224,7 @@ def percentile(values: list[float], q: float) -> float:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Reliability soak test of a BeltWatch service.")
     parser.add_argument("--base-url", default="http://localhost:8000")
+    parser.add_argument("--insecure", action="store_true", help="skip TLS verification (local CA)")
     parser.add_argument("--audits", type=int, default=200)
     parser.add_argument("--in-flight", type=int, default=10, help="audits submitted, not finished")
     parser.add_argument("--images", type=Path, nargs="*", help="PNG frames (default: synthetic)")
@@ -241,7 +242,7 @@ def main(argv: list[str] | None = None) -> int:
     images = [(p.name, p.read_bytes()) for p in args.images or []] or [
         (f"synthetic-{i}.png", synthetic_png(seed=i)) for i in range(4)
     ]
-    smoke = Smoke(args.base_url, insecure=False, timeout=60)
+    smoke = Smoke(args.base_url, insecure=args.insecure, timeout=60)
     worker = WorkerProcess(args.worker_command, args.kill_every) if args.worker_command else None
     if worker:
         worker.start()

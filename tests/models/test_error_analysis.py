@@ -9,7 +9,7 @@ from beltwatch.data.config import load_data_config
 from beltwatch.data.dataset import load_samples
 from beltwatch.data.masks import load_source_remap
 from beltwatch.evaluation import error_analysis as ea
-from beltwatch.evaluation.benchmark import run_benchmark, synthetic_frames
+from beltwatch.evaluation.benchmark import cgroup_limits, run_benchmark, synthetic_frames
 from beltwatch.provenance import file_digest
 from beltwatch.release.bundle import build_release
 from beltwatch.review.policy import load_review_policy
@@ -63,6 +63,14 @@ def test_error_report_refuses_the_test_split() -> None:
         ea.main(["--model", "all-background", "--split", "test", "--out", "x"])
 
 
+def test_cgroup_limits_are_read_when_present(tmp_path: Path) -> None:
+    assert cgroup_limits(tmp_path) is None
+    (tmp_path / "cpu.max").write_text("400000 100000\n")
+    (tmp_path / "memory.max").write_text("8589934592\n")
+
+    assert cgroup_limits(tmp_path) == {"cpu.max": "400000 100000", "memory.max": "8589934592"}
+
+
 def test_benchmark_reports_latency_throughput_memory_and_targets(tmp_path: Path) -> None:
     policy = load_review_policy(REPO / "configs/review_policy.yaml")
     release = build_release(
@@ -78,6 +86,7 @@ def test_benchmark_reports_latency_throughput_memory_and_targets(tmp_path: Path)
     assert result["images_per_second"] > 0 and result["peak_rss_mb"] > 0
     assert set(result["meets_targets"]) == {"p95_seconds", "images_per_second", "peak_rss_mb"}
     assert result["hardware"]["torch_threads"] == 1
+    assert result["hardware"]["cpu_model"] and result["hardware"]["memory_total_mb"] > 0
     assert result["model_sha256"] is None  # all-background has no weights
     parts = result["breakdown"]
     assert set(parts) == {
