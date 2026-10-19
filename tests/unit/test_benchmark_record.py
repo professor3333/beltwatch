@@ -24,6 +24,7 @@ SOAK = {
     "audits_per_second": 0.512345,
     "wall_seconds": 7.8,
     "problems": [],
+    "cache_hits": 0,
 }
 INSPECT = [
     {
@@ -78,6 +79,22 @@ def test_record_combines_the_run_outputs(tmp_path: Path, monkeypatch: pytest.Mon
     assert result["host"]["run_url"] == "https://github.com/owner/BeltWatch/actions/runs/42"
     assert result["host"]["git_commit"] == "f" * 40
     assert result["meets_targets"] == BENCHMARK["meets_targets"]
+
+
+def test_a_run_with_cache_hits_is_refused(tmp_path: Path) -> None:
+    (tmp_path / "seq.json").write_text(json.dumps({**SOAK, "cache_hits": 3}))
+
+    with pytest.raises(SystemExit):
+        br.main(
+            [
+                "--benchmark", "unused.json",
+                "--end-to-end", f"sequential={tmp_path / 'seq.json'}",
+                "--containers", "unused.json",
+                "--memory-peaks", str(tmp_path),
+                "--frames", "unused.json",
+                "--out", str(tmp_path / "out.json"),
+            ]
+        )  # fmt: skip
 
 
 def test_host_reads_cpu_model_and_memory_from_proc(tmp_path: Path) -> None:

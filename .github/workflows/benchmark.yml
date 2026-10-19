@@ -125,9 +125,11 @@ jobs:
             --out "$WORK/out/sequential.json"
 
       - name: End to end, four in flight
+        # Another seed: the regions must differ from the first run's, or its
+        # audits would be served from the result cache.
         run: |
           python3 scripts/soak_test.py --base-url https://localhost --insecure --audits 60 \
-            --in-flight 4 --replay-every 0 --images "$WORK"/frames/*.[Pp][Nn][Gg] \
+            --in-flight 4 --replay-every 0 --seed 1 --images "$WORK"/frames/*.[Pp][Nn][Gg] \
             --out "$WORK/out/saturated.json"
 
       - name: Limits and memory peaks
