@@ -1,0 +1,143 @@
+{
+  "a": {
+    "model": "segformer_b0",
+    "report_dir": "reports/val-analysis/resolution/segformer_b0-val-ls1024",
+    "temperature": 1.0,
+    "provenance": {
+      "git_commit": "5e2f5a5160ab7704207b334302819018cdde8c9d",
+      "model_file": "/private/tmp/claude-501/-Users-dcxhagoromo-code-BeltWatch/37a717d2-36e6-4752-b617-822135913a28/scratchpad/ckpt/beltwatch-checkpoints/segformer-b0-ce/best.pt",
+      "model_sha256": "7be82fdedc06a978ced8b3ef3cdf53461f5e60bbe462fbbeb63c8e2aa4046756"
+    },
+    "foreground_macro_iou": 0.2983718661476362,
+    "iou": {
+      "cardboard": 0.5050268544237887,
+      "soft_plastic": 0.4602197091250848,
+      "rigid_plastic": 0.08042021491401788,
+      "metal": 0.14782068612765337
+    }
+  },
+  "b": {
+    "model": "segformer_b0",
+    "report_dir": "reports/val-analysis/resolution/segformer_b0-val-ls768",
+    "temperature": 1.0,
+    "provenance": {
+      "git_commit": "5e2f5a5160ab7704207b334302819018cdde8c9d",
+      "model_file": "/private/tmp/claude-501/-Users-dcxhagoromo-code-BeltWatch/37a717d2-36e6-4752-b617-822135913a28/scratchpad/ckpt/beltwatch-checkpoints/segformer-b0-ce/best.pt",
+      "model_sha256": "7be82fdedc06a978ced8b3ef3cdf53461f5e60bbe462fbbeb63c8e2aa4046756"
+    },
+    "foreground_macro_iou": 0.31856078570890134,
+    "iou": {
+      "cardboard": 0.5166029865279333,
+      "soft_plastic": 0.45572637842018976,
+      "rigid_plastic": 0.12902256587716282,
+      "metal": 0.17289121201031932
+    }
+  },
+  "split": "val",
+  "split_manifest_id": "c82851178745739c24daa50338ff5f65cb38f8a172420ec5d39a5fdd28d73ead",
+  "n_images": 370,
+  "limited_to": null,
+  "difference_a_minus_b": {
+    "foreground_macro_iou": {
+      "groups_by_sequence": {
+        "estimate": -0.020188919561265117,
+        "low": -0.027672831869070325,
+        "high": -0.012737198534044564,
+        "n_groups": 4,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": true
+      },
+      "groups_by_1000_frame_block": {
+        "estimate": -0.020188919561265117,
+        "low": -0.03397793480340369,
+        "high": 0.00026523484027174453,
+        "n_groups": 31,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": false
+      }
+    },
+    "iou_cardboard": {
+      "groups_by_sequence": {
+        "estimate": -0.011576132104144654,
+        "low": -0.022360215998549038,
+        "high": -0.004357032229077795,
+        "n_groups": 4,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": true
+      },
+      "groups_by_1000_frame_block": {
+        "estimate": -0.011576132104144654,
+        "low": -0.01788827418527042,
+        "high": -0.0027778943872514097,
+        "n_groups": 31,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": false
+      }
+    },
+    "iou_soft_plastic": {
+      "groups_by_sequence": {
+        "estimate": 0.004493330704895049,
+        "low": -0.002990669522449252,
+        "high": 0.01575406457791817,
+        "n_groups": 4,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": true
+      },
+      "groups_by_1000_frame_block": {
+        "estimate": 0.004493330704895049,
+        "low": -0.0091928162314414,
+        "high": 0.016885562519465883,
+        "n_groups": 31,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": false
+      }
+    },
+    "iou_rigid_plastic": {
+      "groups_by_sequence": {
+        "estimate": -0.04860235096314494,
+        "low": -0.05047001675126789,
+        "high": -0.0453831811554472,
+        "n_groups": 4,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": true
+      },
+      "groups_by_1000_frame_block": {
+        "estimate": -0.04860235096314494,
+        "low": -0.0620466935634479,
+        "high": -0.028129965187113675,
+        "n_groups": 31,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": false
+      }
+    },
+    "iou_metal": {
+      "groups_by_sequence": {
+        "estimate": -0.02507052588266595,
+        "low": -0.05451888383129913,
+        "high": 0.0,
+        "n_groups": 4,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": true
+      },
+      "groups_by_1000_frame_block": {
+        "estimate": -0.02507052588266595,
+        "low": -0.06666710303206608,
+        "high": 0.04327959237173093,
+        "n_groups": 31,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": false
+      }
+    }
+  },
+  "note": "paired bootstrap over recording groups; both models resampled on the same groups"
+}

@@ -116,6 +116,30 @@ images the policy sends to a person.
   - At about 90% prevalence, no policy with a 0.95 recall floor can review
     much less than about 85% of images.
 
+**Result (2026-10-19, commit 5e2f5a5;
+[record](results/beltwatch-0.1.0/val-analysis/review_policy.json)):** 370
+val images, 331 audit-positive (89.5%).
+
+- **review-policy-1 sends 91.6% of images to a person:**
+  - recall 0.967; 11 audit-positive images routed `none`
+  - false-alarm share 5.6% of flagged images
+  - routes: 267 `review`, 72 `manual_review`, 31 `none`
+  - 6 of the flagged images are random audits
+- **Grid:** recall reaches 1.0 at a coverage threshold of 0.03 or below, for
+  a review rate of 95.7–97.3%. At 0.08 and above, recall falls below the
+  floor (0.87–0.91 at 0.08, 0.56–0.79 at 0.15).
+- **Selection:** coverage 0.05 with uncertain fraction 0.20 has the same
+  review rate as policy-1 (91.6%), so the reduction is 0. The candidate is
+  **not adopted**, and review-policy-1 stays.
+- **Thresholds on uncertain fraction:** between 0.10 and 0.30 these change
+  the route of about 70 images between `manual_review` and `review`, but not
+  whether they reach a person, because their predicted coverage already
+  flags them.
+
+At this prevalence, routing cannot reduce review work on ZeroWaste-f.
+Showing a workload saving needs data where most images are clean. The 5%
+convention is unchanged.
+
 ## Calibration
 
 - **Temperature scaling** is fitted on the **calibration split only**

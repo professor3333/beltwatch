@@ -302,6 +302,23 @@ was chosen on val at 768, so this comparison favors 768. A `pp-2` would need
 a new release and a new untouched evaluation set before any claim beyond
 val.
 
+**Result (2026-10-19, commit 5e2f5a5, Apple M1;
+[records](results/beltwatch-0.1.0/val-analysis/resolution/)):** no long side
+qualifies, so serving stays at 768 (`pp-1`). At 768 the run reproduced the
+declared val score (0.31856, within 2e-8).
+
+| Long side | Foreground macro IoU | Difference from 768 (block interval) | Rigid plastic | Metal | Predict p50 (M1) |
+|---|---|---|---|---|---|
+| 640 | 0.3170 | −0.0016 (−0.022 to +0.006) | 0.141 | 0.174 | 0.31 s |
+| **768** | **0.3186** | | 0.129 | 0.173 | 0.28 s |
+| 896 | 0.3074 | −0.0112 (−0.019 to +0.003) | 0.087 | 0.166 | 0.39 s |
+| 1024 | 0.2984 | −0.0202 (−0.034 to +0.000) | 0.080 | 0.148 | 0.54 s |
+
+Higher resolutions lose mainly rigid plastic: −4.2 points at 896 and −4.9
+at 1024, with block intervals below zero. That is consistent with objects
+appearing larger than in the 768-based training crops. 640 is within noise
+of 768.
+
 ## 7. Inspect runs
 
 ```bash
