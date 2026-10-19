@@ -270,8 +270,14 @@ data.
 
 The release's review policy, `review-policy-1`, holds design defaults
 (coverage threshold 5%, entropy threshold 0.5, uncertain-fraction threshold
-10%, random audit rate 10%). They were **not tuned** on val or calibration,
-and their effect on review workload has not been measured.
+10%, random audit rate 10%). It was chosen before any results.
+
+Measured afterwards on val (2026-10-19,
+[evaluation.md](evaluation.md#review-policy-evaluation)), it sends 91.6% of
+images to a person and catches 96.7% of audit-positive images (11 of 331
+missed). A declared grid found no thresholds that review less while keeping
+recall at or above 0.95, so the policy was not changed. These are val
+numbers. The policy has not been measured on test.
 
 Each result carries per-pixel normalized entropy, the uncertain fraction of
 the region, input-quality checks (sharpness, exposure), and a route:

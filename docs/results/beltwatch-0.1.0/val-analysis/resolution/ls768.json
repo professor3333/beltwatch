@@ -1,0 +1,251 @@
+{
+  "model": "segformer_b0",
+  "split": "val",
+  "n_images": 370,
+  "beltwatch_version": "0.1.0",
+  "preprocessing_version": "pp-1",
+  "segmentation": {
+    "foreground_macro_iou": 0.31856078570890134,
+    "mean_iou": 0.43462196756113725,
+    "pixel_accuracy": 0.8985554330372039,
+    "iou": {
+      "background": 0.8988666949700811,
+      "cardboard": 0.5166029865279333,
+      "soft_plastic": 0.45572637842018976,
+      "rigid_plastic": 0.12902256587716282,
+      "metal": 0.17289121201031932
+    },
+    "dice": {
+      "background": 0.946740176496954,
+      "cardboard": 0.6812633116470767,
+      "soft_plastic": 0.6261154364939949,
+      "rigid_plastic": 0.2285562215967266,
+      "metal": 0.2948120170735804
+    },
+    "precision": {
+      "background": 0.93377685762127,
+      "cardboard": 0.6978965906035175,
+      "soft_plastic": 0.6944582988740603,
+      "rigid_plastic": 0.6198958987004263,
+      "metal": 0.431620198369375
+    },
+    "recall": {
+      "background": 0.960068493560005,
+      "cardboard": 0.6654044327000104,
+      "soft_plastic": 0.5700188764940186,
+      "rigid_plastic": 0.1401068828869208,
+      "metal": 0.2238572630133783
+    },
+    "undefined_classes": []
+  },
+  "coverage": {
+    "total_mae_pp": 4.425130860026693,
+    "per_class_mae_pp": {
+      "cardboard": 3.748216966966967,
+      "soft_plastic": 2.1637025045879215,
+      "rigid_plastic": 0.9827469396479813,
+      "metal": 0.2799915801217885
+    },
+    "total_bias_pp": -2.337839662579246,
+    "n_images": 370
+  },
+  "review_workload": {
+    "n_images": 370,
+    "n_positive": 331,
+    "prevalence": 0.8945945945945946,
+    "area": 0.5443822977055606,
+    "recall_at": {
+      "0.10": 0.11178247734138973,
+      "0.20": 0.22356495468277945,
+      "0.30": 0.33534743202416917,
+      "0.50": 0.5589123867069486
+    }
+  },
+  "confidence_intervals": {
+    "foreground_macro_iou": {
+      "groups_by_sequence": {
+        "estimate": 0.31856078570890134,
+        "low": 0.20483432795692377,
+        "high": 0.3857857526208938,
+        "n_groups": 4,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": true
+      },
+      "groups_by_1000_frame_block": {
+        "estimate": 0.31856078570890134,
+        "low": 0.24610781540959914,
+        "high": 0.3937361005937141,
+        "n_groups": 31,
+        "n_resamples": 2000,
+        "confidence": 0.95,
+        "too_few_groups": false
+      }
+    }
+  },
+  "calibration": {
+    "nll": 0.284394,
+    "overall": {
+      "ece": 0.019055,
+      "n_pixels": 740000,
+      "bin_edges": [
+        0.0,
+        0.066667,
+        0.133333,
+        0.2,
+        0.266667,
+        0.333333,
+        0.4,
+        0.466667,
+        0.533333,
+        0.6,
+        0.666667,
+        0.733333,
+        0.8,
+        0.866667,
+        0.933333,
+        1.0
+      ],
+      "confidence": [
+        null,
+        null,
+        null,
+        0.255902,
+        0.309361,
+        0.371138,
+        0.437363,
+        0.505897,
+        0.566863,
+        0.633713,
+        0.700791,
+        0.767922,
+        0.835323,
+        0.903508,
+        0.989765
+      ],
+      "accuracy": [
+        null,
+        null,
+        null,
+        0.307692,
+        0.309423,
+        0.36285,
+        0.420159,
+        0.490349,
+        0.547758,
+        0.599084,
+        0.662228,
+        0.723987,
+        0.782208,
+        0.852723,
+        0.980137
+      ],
+      "count": [
+        0,
+        0,
+        0,
+        52,
+        711,
+        2428,
+        4772,
+        15387,
+        20447,
+        21830,
+        24931,
+        29687,
+        40300,
+        63771,
+        515684
+      ]
+    },
+    "foreground": {
+      "ece": 0.2654,
+      "n_pixels": 150686,
+      "bin_edges": [
+        0.0,
+        0.066667,
+        0.133333,
+        0.2,
+        0.266667,
+        0.333333,
+        0.4,
+        0.466667,
+        0.533333,
+        0.6,
+        0.666667,
+        0.733333,
+        0.8,
+        0.866667,
+        0.933333,
+        1.0
+      ],
+      "confidence": [
+        null,
+        null,
+        null,
+        0.25584,
+        0.309271,
+        0.371037,
+        0.437197,
+        0.505506,
+        0.566529,
+        0.633235,
+        0.700163,
+        0.767119,
+        0.834305,
+        0.901471,
+        0.968975
+      ],
+      "accuracy": [
+        null,
+        null,
+        null,
+        0.2,
+        0.252664,
+        0.266477,
+        0.287957,
+        0.325245,
+        0.361704,
+        0.393233,
+        0.439385,
+        0.485657,
+        0.520592,
+        0.568798,
+        0.684004
+      ],
+      "count": [
+        0,
+        0,
+        0,
+        45,
+        657,
+        2109,
+        3886,
+        11622,
+        14487,
+        14424,
+        15021,
+        15931,
+        18308,
+        21781,
+        32415
+      ]
+    }
+  },
+  "slices": {},
+  "prediction_seconds": {
+    "p50": 0.2748276045313105,
+    "p95": 0.5941561265382919,
+    "note": "predict_proba only, on the evaluation machine; not a serving benchmark"
+  },
+  "split_manifest_id": "c82851178745739c24daa50338ff5f65cb38f8a172420ec5d39a5fdd28d73ead",
+  "declared_release": null,
+  "limited_to": null,
+  "temperature": 1.0,
+  "inference_long_side": 768,
+  "provenance": {
+    "git_commit": "5e2f5a5160ab7704207b334302819018cdde8c9d",
+    "model_file": "/private/tmp/claude-501/-Users-dcxhagoromo-code-BeltWatch/37a717d2-36e6-4752-b617-822135913a28/scratchpad/ckpt/beltwatch-checkpoints/segformer-b0-ce/best.pt",
+    "model_sha256": "7be82fdedc06a978ced8b3ef3cdf53461f5e60bbe462fbbeb63c8e2aa4046756"
+  }
+}

@@ -154,6 +154,12 @@ bootstrap over the 5 test recording sequences.
   5% true coverage). The release's ordering scores an area of 0.542, random
   0.503 and a perfect ordering 0.552. At this prevalence the curve cannot
   show a useful ordering.
+- **Review routing (val):** review-policy-1 sends 91.6% of val images to a
+  person and catches 96.7% of audit-positive ones. A declared threshold grid
+  found nothing that reviews less at recall ≥ 0.95, so the policy is
+  unchanged ([evaluation.md](docs/evaluation.md#review-policy-evaluation)).
+  The working resolution stays at 768: 640, 896 and 1024 all scored lower on
+  val ([training.md](docs/training.md)).
 - **CPU benchmark (planning host profile):** in two runs on GitHub-hosted
   runners (4 vCPU; serving image limited to 4 CPUs and 8 GB;
   [how](docs/operations.md#benchmark-on-the-planning-host)), the full

@@ -1,0 +1,499 @@
+{
+  "split": "val",
+  "release": "beltwatch-0.1.0",
+  "model_sha256": "7be82fdedc06a978ced8b3ef3cdf53461f5e60bbe462fbbeb63c8e2aa4046756",
+  "git_commit": "5e2f5a5160ab7704207b334302819018cdde8c9d",
+  "beltwatch_version": "0.1.0",
+  "tuning_version": "rp-tuning-1",
+  "n_images": 370,
+  "n_audit_positive": 331,
+  "prevalence": 0.8945945945945946,
+  "current": {
+    "version": "review-policy-1",
+    "coverage_threshold": 0.05,
+    "uncertain_fraction_threshold": 0.1,
+    "review_rate": 0.9162162162162162,
+    "recall": 0.9667673716012085,
+    "false_alarm_share": 0.05604719764011799,
+    "missed_audit_positive": 11,
+    "flagged": 339,
+    "routes": {
+      "manual_review": 72,
+      "none": 31,
+      "review": 267
+    },
+    "reasons": {
+      "random_audit": 6,
+      "target_coverage": 332,
+      "uncertain_regions": 72
+    }
+  },
+  "candidates": [
+    {
+      "coverage_threshold": 0.02,
+      "uncertain_fraction_threshold": 0.05,
+      "review_rate": 0.972972972972973,
+      "recall": 1.0,
+      "false_alarm_share": 0.08055555555555556,
+      "missed_audit_positive": 0,
+      "flagged": 360,
+      "routes": {
+        "manual_review": 207,
+        "none": 10,
+        "review": 153
+      },
+      "reasons": {
+        "random_audit": 4,
+        "target_coverage": 356,
+        "uncertain_regions": 207
+      }
+    },
+    {
+      "coverage_threshold": 0.02,
+      "uncertain_fraction_threshold": 0.1,
+      "review_rate": 0.972972972972973,
+      "recall": 1.0,
+      "false_alarm_share": 0.08055555555555556,
+      "missed_audit_positive": 0,
+      "flagged": 360,
+      "routes": {
+        "manual_review": 72,
+        "none": 10,
+        "review": 288
+      },
+      "reasons": {
+        "random_audit": 4,
+        "target_coverage": 356,
+        "uncertain_regions": 72
+      }
+    },
+    {
+      "coverage_threshold": 0.02,
+      "uncertain_fraction_threshold": 0.2,
+      "review_rate": 0.972972972972973,
+      "recall": 1.0,
+      "false_alarm_share": 0.08055555555555556,
+      "missed_audit_positive": 0,
+      "flagged": 360,
+      "routes": {
+        "manual_review": 2,
+        "none": 10,
+        "review": 358
+      },
+      "reasons": {
+        "random_audit": 4,
+        "target_coverage": 356,
+        "uncertain_regions": 2
+      }
+    },
+    {
+      "coverage_threshold": 0.02,
+      "uncertain_fraction_threshold": 0.3,
+      "review_rate": 0.972972972972973,
+      "recall": 1.0,
+      "false_alarm_share": 0.08055555555555556,
+      "missed_audit_positive": 0,
+      "flagged": 360,
+      "routes": {
+        "none": 10,
+        "review": 360
+      },
+      "reasons": {
+        "random_audit": 4,
+        "target_coverage": 356
+      }
+    },
+    {
+      "coverage_threshold": 0.03,
+      "uncertain_fraction_threshold": 0.05,
+      "review_rate": 0.9621621621621622,
+      "recall": 1.0,
+      "false_alarm_share": 0.0702247191011236,
+      "missed_audit_positive": 0,
+      "flagged": 356,
+      "routes": {
+        "manual_review": 207,
+        "none": 14,
+        "review": 149
+      },
+      "reasons": {
+        "random_audit": 4,
+        "target_coverage": 349,
+        "uncertain_regions": 207
+      }
+    },
+    {
+      "coverage_threshold": 0.03,
+      "uncertain_fraction_threshold": 0.1,
+      "review_rate": 0.9567567567567568,
+      "recall": 1.0,
+      "false_alarm_share": 0.06497175141242938,
+      "missed_audit_positive": 0,
+      "flagged": 354,
+      "routes": {
+        "manual_review": 72,
+        "none": 16,
+        "review": 282
+      },
+      "reasons": {
+        "random_audit": 5,
+        "target_coverage": 349,
+        "uncertain_regions": 72
+      }
+    },
+    {
+      "coverage_threshold": 0.03,
+      "uncertain_fraction_threshold": 0.2,
+      "review_rate": 0.9567567567567568,
+      "recall": 1.0,
+      "false_alarm_share": 0.06497175141242938,
+      "missed_audit_positive": 0,
+      "flagged": 354,
+      "routes": {
+        "manual_review": 2,
+        "none": 16,
+        "review": 352
+      },
+      "reasons": {
+        "random_audit": 5,
+        "target_coverage": 349,
+        "uncertain_regions": 2
+      }
+    },
+    {
+      "coverage_threshold": 0.03,
+      "uncertain_fraction_threshold": 0.3,
+      "review_rate": 0.9567567567567568,
+      "recall": 1.0,
+      "false_alarm_share": 0.06497175141242938,
+      "missed_audit_positive": 0,
+      "flagged": 354,
+      "routes": {
+        "none": 16,
+        "review": 354
+      },
+      "reasons": {
+        "random_audit": 5,
+        "target_coverage": 349
+      }
+    },
+    {
+      "coverage_threshold": 0.05,
+      "uncertain_fraction_threshold": 0.05,
+      "review_rate": 0.9351351351351351,
+      "recall": 0.9788519637462235,
+      "false_alarm_share": 0.06358381502890173,
+      "missed_audit_positive": 7,
+      "flagged": 346,
+      "routes": {
+        "manual_review": 207,
+        "none": 24,
+        "review": 139
+      },
+      "reasons": {
+        "random_audit": 6,
+        "target_coverage": 332,
+        "uncertain_regions": 207
+      }
+    },
+    {
+      "coverage_threshold": 0.05,
+      "uncertain_fraction_threshold": 0.1,
+      "review_rate": 0.918918918918919,
+      "recall": 0.9667673716012085,
+      "false_alarm_share": 0.058823529411764705,
+      "missed_audit_positive": 11,
+      "flagged": 340,
+      "routes": {
+        "manual_review": 72,
+        "none": 30,
+        "review": 268
+      },
+      "reasons": {
+        "random_audit": 7,
+        "target_coverage": 332,
+        "uncertain_regions": 72
+      }
+    },
+    {
+      "coverage_threshold": 0.05,
+      "uncertain_fraction_threshold": 0.2,
+      "review_rate": 0.9162162162162162,
+      "recall": 0.9667673716012085,
+      "false_alarm_share": 0.05604719764011799,
+      "missed_audit_positive": 11,
+      "flagged": 339,
+      "routes": {
+        "manual_review": 2,
+        "none": 31,
+        "review": 337
+      },
+      "reasons": {
+        "random_audit": 7,
+        "target_coverage": 332,
+        "uncertain_regions": 2
+      }
+    },
+    {
+      "coverage_threshold": 0.05,
+      "uncertain_fraction_threshold": 0.3,
+      "review_rate": 0.9162162162162162,
+      "recall": 0.9667673716012085,
+      "false_alarm_share": 0.05604719764011799,
+      "missed_audit_positive": 11,
+      "flagged": 339,
+      "routes": {
+        "none": 31,
+        "review": 339
+      },
+      "reasons": {
+        "random_audit": 7,
+        "target_coverage": 332
+      }
+    },
+    {
+      "coverage_threshold": 0.08,
+      "uncertain_fraction_threshold": 0.05,
+      "review_rate": 0.8621621621621621,
+      "recall": 0.9123867069486404,
+      "false_alarm_share": 0.05329153605015674,
+      "missed_audit_positive": 29,
+      "flagged": 319,
+      "routes": {
+        "manual_review": 207,
+        "none": 51,
+        "review": 112
+      },
+      "reasons": {
+        "random_audit": 9,
+        "target_coverage": 289,
+        "uncertain_regions": 207
+      }
+    },
+    {
+      "coverage_threshold": 0.08,
+      "uncertain_fraction_threshold": 0.1,
+      "review_rate": 0.8135135135135135,
+      "recall": 0.8670694864048338,
+      "false_alarm_share": 0.046511627906976744,
+      "missed_audit_positive": 44,
+      "flagged": 301,
+      "routes": {
+        "manual_review": 72,
+        "none": 69,
+        "review": 229
+      },
+      "reasons": {
+        "random_audit": 10,
+        "target_coverage": 289,
+        "uncertain_regions": 72
+      }
+    },
+    {
+      "coverage_threshold": 0.08,
+      "uncertain_fraction_threshold": 0.2,
+      "review_rate": 0.8108108108108109,
+      "recall": 0.8670694864048338,
+      "false_alarm_share": 0.043333333333333335,
+      "missed_audit_positive": 44,
+      "flagged": 300,
+      "routes": {
+        "manual_review": 2,
+        "none": 70,
+        "review": 298
+      },
+      "reasons": {
+        "random_audit": 11,
+        "target_coverage": 289,
+        "uncertain_regions": 2
+      }
+    },
+    {
+      "coverage_threshold": 0.08,
+      "uncertain_fraction_threshold": 0.3,
+      "review_rate": 0.8108108108108109,
+      "recall": 0.8670694864048338,
+      "false_alarm_share": 0.043333333333333335,
+      "missed_audit_positive": 44,
+      "flagged": 300,
+      "routes": {
+        "none": 70,
+        "review": 300
+      },
+      "reasons": {
+        "random_audit": 11,
+        "target_coverage": 289
+      }
+    },
+    {
+      "coverage_threshold": 0.1,
+      "uncertain_fraction_threshold": 0.05,
+      "review_rate": 0.8081081081081081,
+      "recall": 0.8640483383685801,
+      "false_alarm_share": 0.043478260869565216,
+      "missed_audit_positive": 45,
+      "flagged": 299,
+      "routes": {
+        "manual_review": 207,
+        "none": 71,
+        "review": 92
+      },
+      "reasons": {
+        "random_audit": 9,
+        "target_coverage": 241,
+        "uncertain_regions": 207
+      }
+    },
+    {
+      "coverage_threshold": 0.1,
+      "uncertain_fraction_threshold": 0.1,
+      "review_rate": 0.7054054054054054,
+      "recall": 0.7613293051359517,
+      "false_alarm_share": 0.034482758620689655,
+      "missed_audit_positive": 79,
+      "flagged": 261,
+      "routes": {
+        "manual_review": 72,
+        "none": 109,
+        "review": 189
+      },
+      "reasons": {
+        "random_audit": 13,
+        "target_coverage": 241,
+        "uncertain_regions": 72
+      }
+    },
+    {
+      "coverage_threshold": 0.1,
+      "uncertain_fraction_threshold": 0.2,
+      "review_rate": 0.6891891891891891,
+      "recall": 0.7462235649546828,
+      "false_alarm_share": 0.03137254901960784,
+      "missed_audit_positive": 84,
+      "flagged": 255,
+      "routes": {
+        "manual_review": 2,
+        "none": 115,
+        "review": 253
+      },
+      "reasons": {
+        "random_audit": 14,
+        "target_coverage": 241,
+        "uncertain_regions": 2
+      }
+    },
+    {
+      "coverage_threshold": 0.1,
+      "uncertain_fraction_threshold": 0.3,
+      "review_rate": 0.6891891891891891,
+      "recall": 0.7462235649546828,
+      "false_alarm_share": 0.03137254901960784,
+      "missed_audit_positive": 84,
+      "flagged": 255,
+      "routes": {
+        "none": 115,
+        "review": 255
+      },
+      "reasons": {
+        "random_audit": 14,
+        "target_coverage": 241
+      }
+    },
+    {
+      "coverage_threshold": 0.15,
+      "uncertain_fraction_threshold": 0.05,
+      "review_rate": 0.7324324324324324,
+      "recall": 0.7854984894259819,
+      "false_alarm_share": 0.04059040590405904,
+      "missed_audit_positive": 71,
+      "flagged": 271,
+      "routes": {
+        "manual_review": 207,
+        "none": 99,
+        "review": 64
+      },
+      "reasons": {
+        "random_audit": 11,
+        "target_coverage": 172,
+        "uncertain_regions": 207
+      }
+    },
+    {
+      "coverage_threshold": 0.15,
+      "uncertain_fraction_threshold": 0.1,
+      "review_rate": 0.5513513513513514,
+      "recall": 0.5981873111782477,
+      "false_alarm_share": 0.029411764705882353,
+      "missed_audit_positive": 133,
+      "flagged": 204,
+      "routes": {
+        "manual_review": 72,
+        "none": 166,
+        "review": 132
+      },
+      "reasons": {
+        "random_audit": 17,
+        "target_coverage": 172,
+        "uncertain_regions": 72
+      }
+    },
+    {
+      "coverage_threshold": 0.15,
+      "uncertain_fraction_threshold": 0.2,
+      "review_rate": 0.5162162162162162,
+      "recall": 0.5619335347432024,
+      "false_alarm_share": 0.02617801047120419,
+      "missed_audit_positive": 145,
+      "flagged": 191,
+      "routes": {
+        "manual_review": 2,
+        "none": 179,
+        "review": 189
+      },
+      "reasons": {
+        "random_audit": 19,
+        "target_coverage": 172,
+        "uncertain_regions": 2
+      }
+    },
+    {
+      "coverage_threshold": 0.15,
+      "uncertain_fraction_threshold": 0.3,
+      "review_rate": 0.5162162162162162,
+      "recall": 0.5619335347432024,
+      "false_alarm_share": 0.02617801047120419,
+      "missed_audit_positive": 145,
+      "flagged": 191,
+      "routes": {
+        "none": 179,
+        "review": 191
+      },
+      "reasons": {
+        "random_audit": 19,
+        "target_coverage": 172
+      }
+    }
+  ],
+  "selected": {
+    "index": 10,
+    "coverage_threshold": 0.05,
+    "uncertain_fraction_threshold": 0.2,
+    "review_rate": 0.9162162162162162,
+    "recall": 0.9667673716012085,
+    "false_alarm_share": 0.05604719764011799,
+    "missed_audit_positive": 11,
+    "flagged": 339,
+    "routes": {
+      "manual_review": 2,
+      "none": 31,
+      "review": 337
+    },
+    "reasons": {
+      "random_audit": 7,
+      "target_coverage": 332,
+      "uncertain_regions": 2
+    }
+  },
+  "adopted": false,
+  "adoption_reason": "review rate +0.0000 below review-policy-1 (adoption needs 0.05)"
+}
