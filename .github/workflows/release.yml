@@ -89,7 +89,7 @@ jobs:
       - name: Fetch the val folder from the pinned archive
         # Images and masks of the release's val folder (val and calibration splits),
         # each checked against data/manifests/zerowaste-f-images.csv.
-        run: uv run python -m beltwatch.data.sample --split val --whole --workers 8 --out data/raw/zerowaste-f
+        run: uv run python -m beltwatch.data.sample --split val --whole --out data/raw/zerowaste-f
 
       - name: Refit the temperature on the calibration split
         run: |

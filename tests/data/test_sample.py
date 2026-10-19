@@ -33,6 +33,7 @@ class RangeServer:
     payload: bytes
     honor_range: bool = True
     truncations: int = 0  # responses that close the connection early
+    rate_limits: int = 0  # responses that answer 429 with Retry-After: 0
     ranges: list[str] = field(default_factory=list)
 
 
@@ -44,6 +45,13 @@ def server() -> Iterator[RangeServer]:
         def do_GET(self) -> None:
             header = self.headers.get("Range", "")
             state.ranges.append(header)
+            if state.rate_limits:
+                state.rate_limits -= 1
+                self.send_response(429)
+                self.send_header("Retry-After", "0")
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return
             body, status = state.payload, 200
             if header and state.honor_range:
                 first, last = (int(v) for v in header.removeprefix("bytes=").split("-"))
@@ -91,6 +99,24 @@ def test_a_dropped_connection_is_retried(server: RangeServer, tmp_path: Path) ->
     assert remote.requests == 3
 
 
+def test_a_rate_limit_waits_as_asked_and_retries(server: RangeServer, tmp_path: Path) -> None:
+    server.rate_limits = 2
+    remote = sample.HTTPRangeFile(server.url, len(server.payload), backoff=0)
+
+    assert remote._fetch(0, 99) == server.payload[:100]
+    assert remote.requests == 3
+
+
+def test_reads_inside_one_block_need_one_request(server: RangeServer) -> None:
+    remote = sample.HTTPRangeFile(server.url, len(server.payload), block_size=1 << 20)
+
+    first, second = remote.read(10), remote.read(10)
+    remote.seek(5)
+
+    assert first + second == server.payload[:20] and remote.read(5) == server.payload[5:10]
+    assert remote.requests == 1
+
+
 def test_skips_nested_and_non_image_members() -> None:
     names = [f"{PREFIX}b.png", f"{PREFIX}labels.json", f"{PREFIX}x/a.png", f"{PREFIX}a.JPG"]
 
@@ -131,6 +157,7 @@ def test_whole_split_fetches_every_listed_file_at_its_archive_path(
     counts = sample.fetch_whole_split(server.url, len(server.payload), digests, tmp_path, workers=3)
 
     assert counts == {"files": 6, "fetched": 6, "kept": 0}
+    assert len(server.ranges) <= 4  # one block per reader: the index, then 3 runs
     assert (tmp_path / "splits_final_deblurred/val/data/val_02.png").read_bytes() == b"val2"
     assert not list(tmp_path.rglob("*test*")) and not list(tmp_path.rglob("*.part"))
 

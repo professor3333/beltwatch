@@ -36,6 +36,7 @@ import time
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 from beltwatch.data.config import load_data_config
@@ -44,7 +45,11 @@ from beltwatch.data.download import IMAGE_SUFFIXES
 log = logging.getLogger(__name__)
 
 ALLOWED_SPLITS = ("train", "val")  # never test: it is locked
-BLOCK_SIZE = 1 << 20
+BLOCK_SIZE = 8 << 20
+"""Bytes per Range request. Members are read in archive order, so one block
+serves several frames; this keeps the request count low enough for Zenodo's
+rate limit (about 1.1 GB of val in under 150 requests)."""
+RATE_LIMITED = {429, 503}
 
 
 class RangeError(RuntimeError):
@@ -52,15 +57,29 @@ class RangeError(RuntimeError):
 
 
 class HTTPRangeFile(io.RawIOBase):
-    """A read-only, seekable view of a remote file of known size, one Range request per read."""
+    """A read-only, seekable view of a remote file of known size.
+
+    Reads are served from aligned blocks of ``block_size`` bytes, each fetched
+    with one Range request; the most recent blocks are kept.
+    """
 
     def __init__(
-        self, url: str, size: int, *, timeout: float = 60, attempts: int = 5, backoff: float = 2
+        self,
+        url: str,
+        size: int,
+        *,
+        block_size: int = BLOCK_SIZE,
+        keep_blocks: int = 2,
+        timeout: float = 120,
+        attempts: int = 8,
+        backoff: float = 2,
     ) -> None:
         self.url, self.size = url, size
+        self.block_size, self.keep_blocks = block_size, keep_blocks
         self.timeout, self.attempts, self.backoff = timeout, attempts, backoff
         self.position = 0
         self.requests = 0
+        self._blocks: dict[int, bytes] = {}
 
     def readable(self) -> bool:
         return True
@@ -77,19 +96,30 @@ class HTTPRangeFile(io.RawIOBase):
         return self.position
 
     def readinto(self, buffer: memoryview) -> int:  # type: ignore[override]
-        end = min(self.position + len(buffer), self.size)
-        if end <= self.position:
+        if self.position >= self.size or not len(buffer):
             return 0
-        data = self._fetch(self.position, end - 1)
+        index, offset = divmod(self.position, self.block_size)
+        block = self._block(index)
+        data = block[offset : offset + len(buffer)]
         buffer[: len(data)] = data
         self.position += len(data)
         return len(data)
+
+    def _block(self, index: int) -> bytes:
+        if index not in self._blocks:
+            first = index * self.block_size
+            last = min(first + self.block_size, self.size) - 1
+            if len(self._blocks) >= self.keep_blocks:
+                del self._blocks[next(iter(self._blocks))]  # the oldest
+            self._blocks[index] = self._fetch(first, last)
+        return self._blocks[index]
 
     def _fetch(self, first: int, last: int) -> bytes:
         """Bytes ``first..last`` inclusive, retrying transient failures."""
         expected = last - first + 1
         for attempt in range(1, self.attempts + 1):
             self.requests += 1
+            wait = self.backoff * attempt
             try:
                 request = Request(self.url, headers={"Range": f"bytes={first}-{last}"})
                 with urlopen(request, timeout=self.timeout) as resp:
@@ -101,11 +131,17 @@ class HTTPRangeFile(io.RawIOBase):
                 return data
             except RangeError:
                 raise
+            except HTTPError as exc:
+                if exc.code not in RATE_LIMITED or attempt == self.attempts:
+                    raise
+                retry_after = exc.headers.get("Retry-After", "")
+                wait = float(retry_after) if retry_after.isdigit() else 30.0 * attempt
+                log.warning("rate limited (%d); waiting %.0f s", exc.code, wait)
             except (OSError, http.client.HTTPException) as exc:  # incl. a dropped connection
                 if attempt == self.attempts:
                     raise
                 log.warning("range %d-%d failed (%s); retry %d", first, last, exc, attempt)
-                time.sleep(self.backoff * attempt)
+            time.sleep(wait)
         raise AssertionError("unreachable")
 
 
@@ -125,8 +161,8 @@ def fetch_sample(
     url: str, size: int, prefix: str, count: int, out_dir: Path, *, block_size: int = BLOCK_SIZE
 ) -> list[dict[str, object]]:
     """Write the first ``count`` images under ``prefix`` to ``out_dir``; returns their records."""
-    remote = HTTPRangeFile(url, size)
-    with zipfile.ZipFile(io.BufferedReader(remote, buffer_size=block_size)) as zf:
+    remote = HTTPRangeFile(url, size, block_size=block_size)
+    with zipfile.ZipFile(io.BufferedReader(remote)) as zf:
         members = split_members(zf.namelist(), prefix, count)
         if len(members) < count:
             raise ValueError(f"{prefix}: only {len(members)} images, {count} requested")
@@ -176,47 +212,54 @@ def fetch_whole_split(
     digests: dict[str, str],
     out_root: Path,
     *,
-    workers: int = 8,
+    workers: int = 4,
     block_size: int = BLOCK_SIZE,
 ) -> dict[str, int]:
-    """Fetch every file in ``digests`` to ``out_root/<archive path>``, verifying each digest."""
-    local = threading.local()
+    """Fetch every file in ``digests`` to ``out_root/<archive path>``, verifying each digest.
 
-    def archive() -> zipfile.ZipFile:  # one reader per thread: ZipFile is not thread-safe
-        if not hasattr(local, "zf"):
-            local.zf = zipfile.ZipFile(
-                io.BufferedReader(HTTPRangeFile(url, size), buffer_size=block_size)
-            )
-        zf: zipfile.ZipFile = local.zf
-        return zf
-
-    def fetch(name: str) -> bool:
+    Missing files are read in archive order, split into ``workers`` contiguous
+    runs, each with its own reader, so every block is fetched once.
+    """
+    missing = []
+    for name in sorted(digests):
         target = out_root / name
-        if target.exists() and _sha256(target) == digests[name]:
-            return False
-        data = archive().read(name)  # checks the member's CRC-32
-        if hashlib.sha256(data).hexdigest() != digests[name]:
-            raise ManifestMismatchError(f"{name}: SHA-256 differs from the image manifest")
-        target.parent.mkdir(parents=True, exist_ok=True)
-        part = target.with_name(target.name + ".part")
-        part.write_bytes(data)
-        part.replace(target)
-        return True
+        if not (target.exists() and _sha256(target) == digests[name]):
+            missing.append(name)
+    kept = len(digests) - len(missing)
+    if not missing:
+        return {"files": len(digests), "fetched": 0, "kept": kept}
 
-    names = sorted(digests)
-    fetched = 0
-    with ThreadPoolExecutor(max_workers=workers) as pool:
-        for i, new in enumerate(pool.map(fetch, names), 1):
-            fetched += new
-            if i % 100 == 0 or i == len(names):
-                log.info(
-                    "%d / %d files (%d fetched, %d already present)",
-                    i,
-                    len(names),
-                    fetched,
-                    i - fetched,
-                )
-    return {"files": len(names), "fetched": fetched, "kept": len(names) - fetched}
+    def reader() -> zipfile.ZipFile:
+        return zipfile.ZipFile(io.BufferedReader(HTTPRangeFile(url, size, block_size=block_size)))
+
+    with reader() as zf:
+        offsets = {info.filename: info.header_offset for info in zf.infolist()}
+    missing.sort(key=lambda name: offsets[name])
+    per_run = -(-len(missing) // max(1, workers))
+    runs = [missing[i : i + per_run] for i in range(0, len(missing), per_run)]
+    done = threading.Lock()
+    fetched = [0]
+
+    def fetch_run(names: list[str]) -> None:
+        with reader() as zf:
+            for name in names:
+                data = zf.read(name)  # checks the member's CRC-32
+                if hashlib.sha256(data).hexdigest() != digests[name]:
+                    raise ManifestMismatchError(f"{name}: SHA-256 differs from the image manifest")
+                target = out_root / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                part = target.with_name(target.name + ".part")
+                part.write_bytes(data)
+                part.replace(target)
+                with done:
+                    fetched[0] += 1
+                    if fetched[0] % 100 == 0 or fetched[0] == len(missing):
+                        log.info("%d / %d files fetched", fetched[0], len(missing))
+
+    with ThreadPoolExecutor(max_workers=len(runs)) as pool:
+        for future in [pool.submit(fetch_run, run) for run in runs]:
+            future.result()
+    return {"files": len(digests), "fetched": fetched[0], "kept": kept}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -226,7 +269,7 @@ def main(argv: list[str] | None = None) -> int:
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--count", type=int, default=20, help="the first N frames, flat")
     mode.add_argument("--whole", action="store_true", help="every image and mask of the split")
-    parser.add_argument("--workers", type=int, default=8, help="parallel readers (--whole)")
+    parser.add_argument("--workers", type=int, default=4, help="parallel readers (--whole)")
     parser.add_argument("--out", type=Path, required=True, help="directory for the frames")
     args = parser.parse_args(argv)
 

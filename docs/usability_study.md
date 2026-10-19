@@ -245,8 +245,47 @@ folder. The manual equivalent of `session` is the API and worker started with
 data/study/study-1 --participants 8`.
 
 `data/study/` holds dataset frames and is never committed. On a machine
-without the extracted archive, fetch only the selected val frames (their
-paths are in the error that `prepare` prints) and pass `--raw-dir`.
+without the extracted archive, fetch the val folder by range request
+(`uv run python -m beltwatch.data.sample --split val --whole --out <dir>`;
+every file is checked against the manifest) and pass `--raw-dir <dir>`.
+
+## Recruiting and running sessions
+
+Who: any adult peer who has not seen BeltWatch's output and is not involved
+in the project. No recycling expertise is needed, because the task is
+defined by the instructions on screen. Aim for 8. The analysis runs once
+recruitment ends, with at least 5.
+
+Invitation (send as is, or adapt the first sentence):
+
+> I'm testing a software prototype for spotting plastic and metal on photos
+> of a recycling conveyor, and I need people to try it. It takes 10 to 20
+> minutes on my laptop, in person. You look at about 44 photos and answer
+> two questions for each. There's no right or wrong, and I record only an
+> anonymous code, your answers and timings. No name, video or audio. Would
+> you have time this week?
+
+Facilitator checklist, per session:
+
+1. Same laptop, browser window size and room conditions as earlier sessions.
+   Notifications off.
+2. `uv run python -m beltwatch.study.session data/study/study-1`. Wait for
+   "Open http://127.0.0.1:8000/study.html". It refuses if the recorded
+   audits are no longer served (see the deadline below).
+3. Read the consent script aloud. If the person declines, stop; nothing is
+   recorded.
+4. Load the next unused plan (`plans/P0n.json`, in order; never reuse one).
+5. Do not help or comment during the blocks. Answer only questions about
+   the controls.
+6. Move the downloaded `results-P0n.json` into the study folder. Note the
+   date and any interruption in a private log, without names.
+7. Stop the service (Ctrl-C).
+
+Deadline: the audits of `data/study/study-1` expire on **2026-11-16**. After
+that, `session` refuses to run, and the study restarts from a new folder
+(`prepare --out data/study/study-2`, which picks the same frames, then
+`session`). Sessions run on `study-1` cannot be mixed with `study-2`. As of
+2026-10-19 no participant session has run, so a restart loses nothing.
 
 ## Status
 
