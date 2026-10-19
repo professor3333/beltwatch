@@ -186,6 +186,11 @@ def test_checkpoint_round_trip_predicts_full_size(tiny_data_config: Path, tmp_pa
     assert proba.shape == (5, 54, 96)
     assert np.allclose(proba.sum(0), 1.0, atol=1e-4)
 
+    # The evaluation-only resolution override changes the working size, not the output size.
+    ablation = NeuralPredictor.from_checkpoint(result.best_checkpoint, long_side=64)
+    assert ablation.preprocess.long_side == 64 != predictor.preprocess.long_side
+    assert ablation.predict_proba(np.zeros((54, 96, 3), dtype=np.uint8)).shape == (5, 54, 96)
+
 
 def test_checkpoint_with_other_preprocessing_version_is_refused(
     tiny_data_config: Path, tmp_path: Path

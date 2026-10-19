@@ -272,6 +272,36 @@ optimistic in the same way. Only the declared release is scored on the test
 split, once. Inference resolution is not part of this round, because a new
 working resolution needs its own preprocessing version.
 
+### Inference-resolution ablation (declared 2026-10-19, before any run)
+
+This ablation asks whether the released weights segment better at another
+working resolution. No training is involved. The `beltwatch-0.1.0`
+checkpoint (SegFormer-B0, seed 0) is scored on val at long sides 640, 896
+and 1024, and at 768 as the baseline:
+
+```bash
+uv run python scripts/evaluate.py --model segformer --model-dir <run> --split val \
+    --inference-long-side 1024
+```
+
+The override exists only for this val ablation. It goes through the shared
+preprocessing module and is recorded in the report as
+`inference_long_side`. The calibration and test splits are refused, and
+serving always uses the checkpoint's own long side (768, `pp-1`).
+
+**Rule:** a long side is worth a new preprocessing version (`pp-2`) only if
+all three hold:
+
+1. It gains more than 2 points of foreground macro IoU over 768.
+2. The paired block interval of the gain is above zero
+   (`scripts/compare.py`).
+3. A benchmark on the planning host keeps p95 at or under 3 s.
+
+The training crops were cut from frames resized to 768, and the best epoch
+was chosen on val at 768, so this comparison favors 768. A `pp-2` would need
+a new release and a new untouched evaluation set before any claim beyond
+val.
+
 ## 7. Inspect runs
 
 ```bash

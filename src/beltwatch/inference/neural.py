@@ -87,8 +87,14 @@ class NeuralPredictor:
 
     @classmethod
     def from_checkpoint(
-        cls, path: Path, device: torch.device | str = "cpu", temperature: Temperature = 1.0
+        cls,
+        path: Path,
+        device: torch.device | str = "cpu",
+        temperature: Temperature = 1.0,
+        long_side: int | None = None,
     ) -> "NeuralPredictor":
+        """Load a checkpoint. ``long_side`` overrides the working resolution for an
+        evaluation-only ablation; serving always uses the checkpoint's value."""
         ckpt = torch.load(path, map_location="cpu", weights_only=True)
         if ckpt.get("format") != CHECKPOINT_FORMAT:
             raise ValueError(f"{path}: not a {CHECKPOINT_FORMAT} file")
@@ -107,7 +113,7 @@ class NeuralPredictor:
         p = ckpt["preprocess"]
         mean, std = p["mean"], p["std"]
         preprocess = PreprocessConfig(
-            long_side=int(p["long_side"]),
+            long_side=long_side or int(p["long_side"]),
             pad_multiple=int(p["pad_multiple"]),
             mean=(float(mean[0]), float(mean[1]), float(mean[2])),
             std=(float(std[0]), float(std[1]), float(std[2])),
