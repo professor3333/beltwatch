@@ -190,9 +190,31 @@ U-Net +0.026 (−0.032 to +0.087).
 
 ### CPU benchmark
 
-The release bundle, 4 threads, 20 val frames at 1920 × 1080, on a Kaggle CPU
-session (4 x86 cores, more than 8 GB of RAM). **This is not the documented 4
-vCPU / 8 GB host**, so the numbers indicate scale only.
+**Planning host profile (4 vCPU / 8 GB).** The bundle was rebuilt from the
+declared weights and checked against the declaration, then benchmarked with
+4 threads on 20 val frames at 1920 × 1080. Each run used a GitHub-hosted
+runner with 4 vCPU, with the serving image limited to 4 CPUs and 8 GB
+([procedure](operations.md#benchmark-on-the-planning-host),
+[records](results/beltwatch-0.1.0/host-benchmark/)). GitHub assigned a
+different CPU model to each run. These are shared cloud VMs, not dedicated
+hardware.
+
+| Measure | Run 1 (EPYC 7763) | Run 2 (EPYC 9V45) | Target |
+|---|---|---|---|
+| Full pipeline p50 / p95 | 0.76 s / 0.79 s | 0.46 s / 0.48 s | p95 ≤ 3 s |
+| Prediction alone p50 | 0.32 s | 0.18 s | |
+| Throughput (sequential) | 1.32 images/s | 2.17 images/s | ≥ 0.5 |
+| Peak resident memory | 1071 MB | 1057 MB | ≤ 2 GB |
+| End to end, one audit at a time, p50 / p95 | 1.61 s / 2.12 s | 1.08 s / 1.59 s | reported only |
+
+The end-to-end times run from submission to a finished audit through the
+HTTPS proxy, the API, the queue and the worker, with status polled every
+0.5 s. In run 2, four audits in flight completed 1.63 audits/s (p95 1.93 s).
+Run 1's four-in-flight figure is invalid: it reused the regions of the
+sequential run, so most of its audits were served from the result cache.
+
+**Kaggle CPU session** (4 x86 cores, more than 8 GB of RAM), from the
+release session:
 
 | Measure | Value | Target |
 |---|---|---|
@@ -214,7 +236,7 @@ ran faster in this session, so part of the change is the machine.
 | Total coverage MAE ≤ 5 points | 4.98 | met, by 0.02 points; no interval was computed |
 | Recall vs workload clearly better than random | area 0.542 vs 0.503 at 89.7% prevalence | **missed** (not demonstrable at this prevalence) |
 | Seed-to-seed spread ≤ 2 points (val) | 0.29 points over 3 seeds | met |
-| Warm p95 ≤ 3 s, ≥ 0.5 images/s, ≤ 2 GB | 1.59 s, 0.73 images/s, 958 MB | met on Kaggle; not measured on the documented host |
+| Warm p95 ≤ 3 s, ≥ 0.5 images/s, ≤ 2 GB | at most 0.79 s, at least 1.32 images/s, at most 1071 MB on the 4 vCPU / 8 GB profile (two runs); 1.59 s, 0.73 images/s, 958 MB on Kaggle | met |
 
 Rigid plastic (0.109, and 0.038 on sequence 08) and metal (0.191) are weak.
 A coverage MAE this close to the threshold could fall on either side on

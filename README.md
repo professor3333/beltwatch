@@ -154,9 +154,16 @@ bootstrap over the 5 test recording sequences.
   5% true coverage). The release's ordering scores an area of 0.542, random
   0.503 and a perfect ordering 0.552. At this prevalence the curve cannot
   show a useful ordering.
-- **CPU benchmark:** full pipeline p50 1.33 s, p95 1.59 s, 0.73 images/s,
-  958 MB peak. Measured on a Kaggle CPU session with 4 cores, **not** the
-  documented 4 vCPU / 8 GB host.
+- **CPU benchmark (planning host profile):** in two runs on GitHub-hosted
+  runners (4 vCPU; serving image limited to 4 CPUs and 8 GB;
+  [how](docs/operations.md#benchmark-on-the-planning-host)), the full
+  pipeline took p95 0.48–0.79 s, at 1.32–2.17 images/s with a peak of
+  1.06–1.07 GB. GitHub assigned a different CPU to each run (AMD EPYC 9V45
+  and 7763), and most of the spread comes from that. Shared cloud VMs, not
+  dedicated hardware. End to end through the proxy, one audit at a time
+  (including the upload, the queue and 0.5 s status polling), p50 was
+  1.08–1.61 s. An earlier Kaggle CPU session (4 cores) measured p95 1.59 s
+  and 0.73 images/s.
 
 | Proposed target | Result |
 |---|---|
@@ -165,7 +172,7 @@ bootstrap over the 5 test recording sequences.
 | Coverage MAE ≤ 5 points | **Met, narrowly:** 4.98 (one val seed scored 5.38) |
 | Recall vs workload clearly better than random | **Missed:** not demonstrable at 89.7% prevalence |
 | Seed spread ≤ 2 points | **Met:** 0.29 points over 3 seeds (val) |
-| p95 ≤ 3 s, ≥ 0.5 images/s, ≤ 2 GB | **Met** on Kaggle; not yet measured on the documented host |
+| p95 ≤ 3 s, ≥ 0.5 images/s, ≤ 2 GB | **Met** on the 4 vCPU / 8 GB profile: p95 at most 0.79 s, at least 1.32 images/s, at most 1.07 GB (two GitHub-runner runs); also met on Kaggle |
 | ≥ 99% of 200 jobs succeed, no duplicate completions | **Met:** 200 of 200, with the worker killed 13 times ([soak test](docs/operations.md#reliability-soak-test); local M1 Mac, not the documented host) |
 
 ## Tech stack
@@ -189,7 +196,7 @@ bootstrap over the 5 test recording sequences.
 | U-Net (ResNet-18) and SegFormer-B0 training with MLflow | Done: trained on Kaggle GPUs; SegFormer-B0 selected |
 | Temperature-scaling calibration (overall and foreground ECE) | Done: fitted on the calibration split; T 1.04 for the release |
 | Evaluation suite: foreground macro IoU, coverage MAE, review workload, group bootstrap | Built and tested |
-| Error-analysis report and CPU benchmark | Done on val ([findings](docs/error_analysis.md)); benchmark on Kaggle CPU, not yet on the documented host |
+| Error-analysis report and CPU benchmark | Done on val ([findings](docs/error_analysis.md)); benchmark on Kaggle CPU and on the 4 vCPU / 8 GB profile (GitHub runner, [record](docs/results/beltwatch-0.1.0/host-benchmark/)) |
 | Audit service: durable jobs, leases, retries, idempotency, append-only feedback, reports | Built and tested; exercised live; 200-job soak test with worker kills |
 | Feedback → annotation review → training candidates | Built and tested; no consented feedback exists yet, so no dataset version uses it |
 | Monitoring: Prometheus metrics with active-release provenance, runbook | Built and tested |
