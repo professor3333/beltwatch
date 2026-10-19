@@ -62,6 +62,16 @@ It then runs the host benchmark. It never fetches or scores the test split:
 a release is scored on test once, in the Kaggle `release` session. Only JSON
 reports are uploaded.
 
+**Result for `beltwatch-0.1.0`** (2026-10-19, run 39202671139 at commit
+`5e2f5a5`; [`ci-validation/`](results/beltwatch-0.1.0/ci-validation/)). Every
+check passed:
+
+- refitted temperature: 1.04 on 200 calibration images
+- val foreground macro IoU: 0.3185609 against the declared 0.3185608
+- parity: maximum probability difference 0 on 5 val frames
+
+The chained benchmark is run 3 above.
+
 Promote a model only with an evaluation report that passes the release gates
 in [evaluation.md](evaluation.md), and record why it was promoted
 (`--reason`) and which version it replaces (written to
@@ -214,20 +224,20 @@ gh run download <run-id> -n benchmark-host-beltwatch-0.1.0 -D benchmark-host/
 Copy `benchmark-host.json` into `docs/results/<version>/` before quoting any
 of its numbers.
 
-**Results for `beltwatch-0.1.0`** (2026-10-19, two runs;
+**Results for `beltwatch-0.1.0`** (2026-10-19, three runs;
 [`host-benchmark/`](results/beltwatch-0.1.0/host-benchmark/)). The bundle
-matched the declaration in both runs.
+matched the declaration in every run. Run 3 ran inside the release workflow.
 
-| | Run 1 (AMD EPYC 7763) | Run 2 (AMD EPYC 9V45) |
-|---|---|---|
-| Full pipeline p50 / p95 | 0.76 / 0.79 s | 0.46 / 0.48 s |
-| Throughput | 1.32 images/s | 2.17 images/s |
-| Peak RSS (benchmark) | 1071 MB | 1057 MB |
-| End to end, 1 in flight, p50 / p95 | 1.61 / 2.12 s (40 of 40) | 1.08 / 1.59 s (40 of 40) |
-| End to end, 4 in flight | invalid (cache hits) | 1.63 audits/s, p95 1.93 s (60 of 60) |
-| cgroup memory peak: worker / api / proxy | 1008 / 376 / 28 MB | 1041 / 375 / 28 MB |
+| | Run 1 (AMD EPYC 7763) | Run 2 (AMD EPYC 9V45) | Run 3 (AMD EPYC 9V74) |
+|---|---|---|---|
+| Full pipeline p50 / p95 | 0.76 / 0.79 s | 0.46 / 0.48 s | 0.60 / 0.62 s |
+| Throughput | 1.32 images/s | 2.17 images/s | 1.65 images/s |
+| Peak RSS (benchmark) | 1071 MB | 1057 MB | 1015 MB |
+| End to end, 1 in flight, p50 / p95 | 1.61 / 2.12 s (40 of 40) | 1.08 / 1.59 s (40 of 40) | 1.11 / 2.10 s (40 of 40) |
+| End to end, 4 in flight | invalid (cache hits) | 1.63 audits/s, p95 1.93 s (60 of 60) | 1.30 audits/s, p95 2.98 s (60 of 60) |
+| cgroup memory peak: worker / api / proxy | 1008 / 376 / 28 MB | 1041 / 375 / 28 MB | 1067 / 381 / 26 MB |
 
-All three engineering targets are met in both runs. Most of the difference
+All three engineering targets are met in every run. Most of the difference
 between the runs comes from the CPU GitHub assigned. In run 1, the
 four-in-flight run used the same seed as the sequential run. Its first 40
 audits repeated the sequential run's regions and were served from the result

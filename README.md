@@ -8,6 +8,7 @@ Semantic segmentation · visible-coverage estimation · uncertainty-aware review
 
 [![ci](https://github.com/professor3333/beltwatch/actions/workflows/ci.yml/badge.svg)](https://github.com/professor3333/beltwatch/actions/workflows/ci.yml)
 [![container](https://github.com/professor3333/beltwatch/actions/workflows/container.yml/badge.svg)](https://github.com/professor3333/beltwatch/actions/workflows/container.yml)
+[![release](https://github.com/professor3333/beltwatch/actions/workflows/release.yml/badge.svg)](https://github.com/professor3333/beltwatch/actions/workflows/release.yml)
 [![License: MIT](https://img.shields.io/badge/code%20license-MIT-blue.svg)](LICENSE)
 [![Dataset: ZeroWaste-f](https://img.shields.io/badge/dataset-ZeroWaste--f-green.svg)](https://ai.bu.edu/zerowaste/)
 ![Status: in development](https://img.shields.io/badge/status-in%20development-orange.svg)
@@ -160,13 +161,13 @@ bootstrap over the 5 test recording sequences.
   unchanged ([evaluation.md](docs/evaluation.md#review-policy-evaluation)).
   The working resolution stays at 768: 640, 896 and 1024 all scored lower on
   val ([training.md](docs/training.md)).
-- **CPU benchmark (planning host profile):** in two runs on GitHub-hosted
+- **CPU benchmark (planning host profile):** in three runs on GitHub-hosted
   runners (4 vCPU; serving image limited to 4 CPUs and 8 GB;
   [how](docs/operations.md#benchmark-on-the-planning-host)), the full
   pipeline took p95 0.48–0.79 s, at 1.32–2.17 images/s with a peak of
-  1.06–1.07 GB. GitHub assigned a different CPU to each run (AMD EPYC 9V45
-  and 7763), and most of the spread comes from that. Shared cloud VMs, not
-  dedicated hardware. End to end through the proxy, one audit at a time
+  1.01–1.07 GB. GitHub assigned a different CPU to each run (AMD EPYC 7763,
+  9V45 and 9V74), and most of the spread comes from that. Shared cloud VMs,
+  not dedicated hardware. End to end through the proxy, one audit at a time
   (including the upload, the queue and 0.5 s status polling), p50 was
   1.08–1.61 s. An earlier Kaggle CPU session (4 cores) measured p95 1.59 s
   and 0.73 images/s.
@@ -178,7 +179,7 @@ bootstrap over the 5 test recording sequences.
 | Coverage MAE ≤ 5 points | **Met, narrowly:** 4.98 (one val seed scored 5.38) |
 | Recall vs workload clearly better than random | **Missed:** not demonstrable at 89.7% prevalence |
 | Seed spread ≤ 2 points | **Met:** 0.29 points over 3 seeds (val) |
-| p95 ≤ 3 s, ≥ 0.5 images/s, ≤ 2 GB | **Met** on the 4 vCPU / 8 GB profile: p95 at most 0.79 s, at least 1.32 images/s, at most 1.07 GB (two GitHub-runner runs); also met on Kaggle |
+| p95 ≤ 3 s, ≥ 0.5 images/s, ≤ 2 GB | **Met** on the 4 vCPU / 8 GB profile: p95 at most 0.79 s, at least 1.32 images/s, at most 1.07 GB (three GitHub-runner runs); also met on Kaggle |
 | ≥ 99% of 200 jobs succeed, no duplicate completions | **Met:** 200 of 200, with the worker killed 13 times ([soak test](docs/operations.md#reliability-soak-test); local M1 Mac, not the documented host) |
 
 ## Tech stack
@@ -208,9 +209,11 @@ bootstrap over the 5 test recording sequences.
 | Monitoring: Prometheus metrics with active-release provenance, runbook | Built and tested |
 | Review UI | Built; exercised in a headless browser |
 | Versioned release bundles, activation, and rollback | Built; switch and rollback verified in CI |
+| Release validation in CI | `release.yml` on version tags: weights, calibration refit, val re-score, bundle, parity, host benchmark; passed for `beltwatch-0.1.0` |
+| Review-policy evaluation | Measured and tuned on val under a declared rule; review-policy-1 kept |
 | Docker Compose deployment (HTTPS proxy, API, worker, Prometheus) | Built; deployed and smoke-tested in CI |
 | Fresh-checkout reproduction | Checked 2026-10-17: clone → `uv sync` → tests → service with the all-background and the `beltwatch-0.1.0` bundles |
-| Ablations and 3-seed finalists | Done for loss, crop sampling and class weights (none adopted); 3 seeds of the finalist. Inference resolution not run |
+| Ablations and 3-seed finalists | Done for loss, crop sampling and class weights (none adopted); 3 seeds of the finalist; inference resolution on val (768 kept) |
 | Locked test-set evaluation of a declared release | Done once, for `beltwatch-0.1.0` ([results](#results)) |
 | Usability-study kit (protocol, matched val sets, study page, declared analysis) | Built, tested, dry-run with scripted sessions; **no participant sessions yet** ([protocol](docs/usability_study.md)) |
 | Staged robustness dataset, hosted demo, ONNX/INT8 | Not started |

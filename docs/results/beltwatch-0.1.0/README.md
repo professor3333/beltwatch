@@ -23,7 +23,8 @@ against the declaration.
 | `test/all-background.json`, `test/random-forest.json` | Reference baselines on test |
 | `test/compare-release-vs-*.json` | Paired bootstrap differences over recording groups |
 | `soak.json` | Reliability soak test of the bundle: 200 audits with worker kills (Apple M1, local; [operations.md](../../operations.md#reliability-soak-test)) |
-| `host-benchmark/run-<id>.json` | The bundle benchmarked on the 4 vCPU / 8 GB profile by the `benchmark` workflow (GitHub-hosted runner, image limited to 4 CPUs / 8 GB), one file per run; run 39196619485's four-in-flight figure is invalid (cache hits; [operations.md](../../operations.md#benchmark-on-the-planning-host)) |
+| `host-benchmark/run-<id>.json` | The bundle benchmarked on the 4 vCPU / 8 GB profile by the `benchmark` workflow (GitHub-hosted runner, image limited to 4 CPUs / 8 GB), one file per run (run 39202671139 ran inside the release workflow); run 39196619485's four-in-flight figure is invalid (cache hits; [operations.md](../../operations.md#benchmark-on-the-planning-host)) |
+| `ci-validation/` | The release workflow's validation (run 39202671139, commit `5e2f5a5`): refitted calibration, val re-score at T 1.04, the rebuilt bundle's manifest, runtime parity; all matched the declaration |
 | `val-analysis/review_policy.json` | Review-policy routing on val: review-policy-1 and the declared grid (rp-tuning-1); not adopted ([evaluation.md](../../evaluation.md#review-policy-evaluation)) |
 | `val-analysis/resolution/` | Inference-resolution ablation on val (long sides 640–1024) with paired comparisons against 768; none qualifies ([training.md](../../training.md)) |
 | `test/complete.json` | Marks the test run complete; the test split is not scored again for this release |
