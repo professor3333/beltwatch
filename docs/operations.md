@@ -192,6 +192,26 @@ gh run download <run-id> -n benchmark-host-beltwatch-0.1.0 -D benchmark-host/
 Copy `benchmark-host.json` into `docs/results/<version>/` before quoting any
 of its numbers.
 
+**Results for `beltwatch-0.1.0`** (2026-10-19, two runs;
+[`host-benchmark/`](results/beltwatch-0.1.0/host-benchmark/)). The bundle
+matched the declaration in both runs.
+
+| | Run 1 (AMD EPYC 7763) | Run 2 (AMD EPYC 9V45) |
+|---|---|---|
+| Full pipeline p50 / p95 | 0.76 / 0.79 s | 0.46 / 0.48 s |
+| Throughput | 1.32 images/s | 2.17 images/s |
+| Peak RSS (benchmark) | 1071 MB | 1057 MB |
+| End to end, 1 in flight, p50 / p95 | 1.61 / 2.12 s (40 of 40) | 1.08 / 1.59 s (40 of 40) |
+| End to end, 4 in flight | invalid (cache hits) | 1.63 audits/s, p95 1.93 s (60 of 60) |
+| cgroup memory peak: worker / api / proxy | 1008 / 376 / 28 MB | 1041 / 375 / 28 MB |
+
+All three engineering targets are met in both runs. Most of the difference
+between the runs comes from the CPU GitHub assigned. In run 1, the
+four-in-flight run used the same seed as the sequential run. Its first 40
+audits repeated the sequential run's regions and were served from the result
+cache, so it is not reported. Since then the workflow uses a second seed, and
+the record refuses any run with cache hits.
+
 ## Known trade-offs
 
 - A single host means downtime during host maintenance. There is no high
