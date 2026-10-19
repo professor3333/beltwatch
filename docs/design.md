@@ -983,7 +983,7 @@ _Status as of 2026-10-17 (release `beltwatch-0.1.0`)._
 - [x] API jobs recover predictably from failures.
 - [x] The application is containerized.
 - [x] Automated tests cover important data, model, API, and recovery behavior.
-- [ ] CI/CD validates releases and deployment smoke tests. Partial: CI deploys, smoke-tests, switches and rolls back on every serving change; release validation (val re-score, parity, benchmark) runs in the Kaggle `release` session, because CI has neither the dataset nor the weights.
+- [x] CI/CD validates releases and deployment smoke tests. CI deploys, smoke-tests, switches and rolls back on every serving change (`container.yml`); `release.yml` validates a declared release on its version tag (weights digest, calibration refit, val re-score, bundle, runtime parity) and benchmarks it on the 4 vCPU / 8 GB profile. First run for beltwatch-0.1.0 passed on 2026-10-19 (`docs/results/beltwatch-0.1.0/ci-validation/`). The locked test split is scored only in the Kaggle `release` session.
 - [x] Deployment or local reproduction instructions work from a fresh checkout.
 - [x] Predictions and operational metrics include model provenance.
 - [x] Basic monitoring and an investigation procedure exist.

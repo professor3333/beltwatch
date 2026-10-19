@@ -1,0 +1,182 @@
+{
+  "release": "beltwatch-0.1.0",
+  "model_sha256": "7be82fdedc06a978ced8b3ef3cdf53461f5e60bbe462fbbeb63c8e2aa4046756",
+  "host": {
+    "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+    "cpu_model": "AMD EPYC 9V74 80-Core Processor",
+    "cpu_count": 4,
+    "memory_total_mb": 15989.7,
+    "runner": {
+      "name": "GitHub Actions 1000003366",
+      "image_os": "ubuntu24",
+      "image_version": "20261012.334.1"
+    },
+    "git_commit": "5e2f5a5160ab7704207b334302819018cdde8c9d",
+    "run_url": "https://github.com/professor3333/beltwatch/actions/runs/39202671139"
+  },
+  "containers": {
+    "api": {
+      "image": "sha256:0c664891b8f09d9588148baf97aa55e5e087ea9bdc2ce8ba076d8cb3d06a945c",
+      "memory_limit_mb": 2048,
+      "cpus": 4.0
+    },
+    "proxy": {
+      "image": "sha256:5e0a314e87ee77965b977aca1699c2888aac0847287a7c0400d2bcbddde9e526",
+      "memory_limit_mb": 512,
+      "cpus": 4.0
+    },
+    "worker": {
+      "image": "sha256:0c664891b8f09d9588148baf97aa55e5e087ea9bdc2ce8ba076d8cb3d06a945c",
+      "memory_limit_mb": 3072,
+      "cpus": 4.0
+    }
+  },
+  "benchmark": {
+    "release": "beltwatch-0.1.0",
+    "model_kind": "segformer",
+    "model_sha256": "7be82fdedc06a978ced8b3ef3cdf53461f5e60bbe462fbbeb63c8e2aa4046756",
+    "git_commit": "5e2f5a5160ab7704207b334302819018cdde8c9d",
+    "image_size": [
+      1920,
+      1080
+    ],
+    "iterations": 20,
+    "predict_only": {
+      "p50_seconds": 0.2557,
+      "p95_seconds": 0.2971,
+      "max_seconds": 0.3371,
+      "mean_seconds": 0.2623
+    },
+    "full_pipeline": {
+      "p50_seconds": 0.6046,
+      "p95_seconds": 0.6235,
+      "max_seconds": 0.6593,
+      "mean_seconds": 0.6046
+    },
+    "breakdown": {
+      "process_image": {
+        "p50_seconds": 0.3743,
+        "p95_seconds": 0.4042,
+        "max_seconds": 0.4169,
+        "mean_seconds": 0.3757
+      },
+      "encode_mask_png": {
+        "p50_seconds": 0.0096,
+        "p95_seconds": 0.0109,
+        "max_seconds": 0.011,
+        "mean_seconds": 0.0099
+      },
+      "encode_overlay_png": {
+        "p50_seconds": 0.1743,
+        "p95_seconds": 0.1775,
+        "max_seconds": 0.1868,
+        "mean_seconds": 0.1734
+      },
+      "encode_uncertainty_png": {
+        "p50_seconds": 0.0459,
+        "p95_seconds": 0.0491,
+        "max_seconds": 0.0495,
+        "mean_seconds": 0.0457
+      }
+    },
+    "images_per_second": 1.6539,
+    "peak_rss_mb": 1014.9,
+    "wall_seconds": 17.34,
+    "targets": {
+      "p95_seconds": 3.0,
+      "images_per_second": 0.5,
+      "peak_rss_mb": 2048.0
+    },
+    "meets_targets": {
+      "p95_seconds": true,
+      "images_per_second": true,
+      "peak_rss_mb": true
+    },
+    "hardware": {
+      "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.36",
+      "machine": "x86_64",
+      "cpu_model": "AMD EPYC 9V74 80-Core Processor",
+      "cpu_count": 4,
+      "memory_total_mb": 15989.7,
+      "cgroup_limits": {
+        "cpu.max": "400000 100000",
+        "memory.max": "8589934592"
+      },
+      "torch_threads": 4,
+      "torch_version": "2.14.1+cpu"
+    },
+    "note": "planning targets from the design; meaningful only on the target hardware",
+    "beltwatch_version": "0.1.0"
+  },
+  "end_to_end": {
+    "sequential": {
+      "audits": 40,
+      "in_flight": 1,
+      "by_status": {
+        "complete": 40
+      },
+      "success_rate": 1.0,
+      "seconds_to_finish": {
+        "p50": 1.1063440089999972,
+        "p95": 2.1032066230000055
+      },
+      "cache_hits": 0,
+      "audits_per_second": 0.5364,
+      "wall_seconds": 74.6,
+      "problems": 0
+    },
+    "saturated": {
+      "audits": 60,
+      "in_flight": 4,
+      "by_status": {
+        "complete": 60
+      },
+      "success_rate": 1.0,
+      "seconds_to_finish": {
+        "p50": 2.50711278,
+        "p95": 2.978628558999958
+      },
+      "cache_hits": 0,
+      "audits_per_second": 1.2971,
+      "wall_seconds": 46.3,
+      "problems": 0
+    }
+  },
+  "memory_peak_mb": {
+    "api": 381.2,
+    "proxy": 26.0,
+    "worker": 1066.8
+  },
+  "frames": {
+    "split": "val",
+    "count": 20,
+    "sha256": [
+      "15b0e9637b85571af0fb021026b1b37af6469e76847616f03baa03b486a83c7c",
+      "7a95be7d0596d30fd593c2efbde24da0e06df6a9ed1b7c6d77bb8e49bd53b6d0",
+      "45e04290d2a19aad13d441be88599ed7b57ae6cf7860a6807d27051f82198564",
+      "54ff43bc8d0a68307e7212a0274ba4e6fc3eefbfbbde6c5aa045d5c7bc1b78ee",
+      "6a46cfad947d577c14657476708a913969e77500c64f5cf222468511559e8dbb",
+      "cc313db4d66c7cb26a9545903049354d8b9051f71955d56da64210fef4668f4c",
+      "237b7ba0431093f03865172b8ef0e483c6e51732f4400651d0eaca2423c3bc92",
+      "389bc65b3bada49d7da6077c6ced48d23c252fc5b99fda7be5b3e03d2ad9a293",
+      "af22b3e17bb23156144eb405f760a84d1684043f64982e816c410b5b9807877e",
+      "cfc4a52680bfa8bb8b4909c7c00b4c5a8a128d5daefbb753b864050fdbe9e71e",
+      "a5ae74fbade4378eb10d031b7a07ded4120fb41dc10ef6d9c486d971d0711749",
+      "0548f1371d39275df36b932be835a4982f2b8ef3ed6a4e3f2455bb842c3efd75",
+      "4f4e565dc54bb430a6305c7129999118d5848c90b0247518ea51dce644eeb426",
+      "89b038c49207bdec02487eaeed94f71967fe9408357e95d221b2d10af120e97a",
+      "6beb96227ba7700a651635d07d93d8e16013c0016fd0e884ad6f6c0f219ed24b",
+      "01f74caaaff507db6152f3fa9fa86192b832bf5c9214fb65c22d63044582bf33",
+      "2e66a3947d14e8eaccbbe8c8faefc3dd8723d259480213ab33c65f6d47598371",
+      "4438f0171359fdc21a9e75ce4622388ac98fbf55b4cecd5cb6dc28ae175e3d5b",
+      "c70daa84efa6336ef840b4316ffdc39f6545d6da088ec0d0609fb565847d37ef",
+      "4d0c6d248cc030f59d634eaba85d99a70fa258f8461a9416a83d5ab79a69073b"
+    ]
+  },
+  "meets_targets": {
+    "p95_seconds": true,
+    "images_per_second": true,
+    "peak_rss_mb": true
+  },
+  "note": "Targets judged on the in-container benchmark (warm, excluding upload and queue). End-to-end times run from submit to a finished audit through the HTTPS proxy, with status polled every 0.5 s. A GitHub-hosted runner is a shared cloud VM."
+}
