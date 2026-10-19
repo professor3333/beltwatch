@@ -32,6 +32,7 @@ class RangeServer:
     url: str
     payload: bytes
     honor_range: bool = True
+    truncations: int = 0  # responses that close the connection early
     ranges: list[str] = field(default_factory=list)
 
 
@@ -50,6 +51,10 @@ def server() -> Iterator[RangeServer]:
             self.send_response(status)
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
+            if state.truncations:
+                state.truncations -= 1
+                body = body[: len(body) // 2]
+                self.close_connection = True
             self.wfile.write(body)
 
         def log_message(self, *args: object) -> None:
@@ -78,6 +83,14 @@ def test_fetches_the_first_frames_of_the_split_in_name_order(
     assert server.ranges and all(r.startswith("bytes=") for r in server.ranges)
 
 
+def test_a_dropped_connection_is_retried(server: RangeServer, tmp_path: Path) -> None:
+    server.truncations = 2
+    remote = sample.HTTPRangeFile(server.url, len(server.payload), backoff=0)
+
+    assert remote._fetch(0, 99) == server.payload[:100]
+    assert remote.requests == 3
+
+
 def test_skips_nested_and_non_image_members() -> None:
     names = [f"{PREFIX}b.png", f"{PREFIX}labels.json", f"{PREFIX}x/a.png", f"{PREFIX}a.JPG"]
 
@@ -99,3 +112,62 @@ def test_a_server_ignoring_range_requests_is_an_error(server: RangeServer, tmp_p
 def test_the_locked_test_split_is_refused(tmp_path: Path) -> None:
     with pytest.raises(SystemExit):
         sample.main(["--split", "test", "--out", str(tmp_path)])
+
+
+def val_digests() -> dict[str, str]:
+    root = "splits_final_deblurred/val"
+    digests = {}
+    for i in (1, 2, 3):
+        digests[f"{root}/data/val_{i:02d}.png"] = hashlib.sha256(f"val{i}".encode()).hexdigest()
+        digests[f"{root}/sem_seg/val_{i:02d}.png"] = hashlib.sha256(b"mask").hexdigest()
+    return digests
+
+
+def test_whole_split_fetches_every_listed_file_at_its_archive_path(
+    server: RangeServer, tmp_path: Path
+) -> None:
+    digests = val_digests()
+
+    counts = sample.fetch_whole_split(server.url, len(server.payload), digests, tmp_path, workers=3)
+
+    assert counts == {"files": 6, "fetched": 6, "kept": 0}
+    assert (tmp_path / "splits_final_deblurred/val/data/val_02.png").read_bytes() == b"val2"
+    assert not list(tmp_path.rglob("*test*")) and not list(tmp_path.rglob("*.part"))
+
+    again = sample.fetch_whole_split(server.url, len(server.payload), digests, tmp_path)
+    assert again == {"files": 6, "fetched": 0, "kept": 6}
+
+
+def test_whole_split_refetches_a_damaged_file(server: RangeServer, tmp_path: Path) -> None:
+    digests = val_digests()
+    sample.fetch_whole_split(server.url, len(server.payload), digests, tmp_path)
+    damaged = tmp_path / "splits_final_deblurred/val/data/val_01.png"
+    damaged.write_bytes(b"corrupt")
+
+    counts = sample.fetch_whole_split(server.url, len(server.payload), digests, tmp_path)
+
+    assert counts["fetched"] == 1 and damaged.read_bytes() == b"val1"
+
+
+def test_whole_split_refuses_a_file_that_differs_from_the_manifest(
+    server: RangeServer, tmp_path: Path
+) -> None:
+    digests = {"splits_final_deblurred/val/data/val_01.png": "0" * 64}
+
+    with pytest.raises(sample.ManifestMismatchError):
+        sample.fetch_whole_split(server.url, len(server.payload), digests, tmp_path)
+    assert not (tmp_path / "splits_final_deblurred/val/data/val_01.png").exists()
+
+
+def test_manifest_digests_cover_images_and_masks_of_one_split(tmp_path: Path) -> None:
+    images_csv = tmp_path / "images.csv"
+    images_csv.write_text(
+        "image_id,split,image_path,mask_path,image_sha256,mask_sha256\n"
+        "val/a,val,v/data/a.PNG,v/sem_seg/a.PNG,ia,ma\n"
+        "test/b,test,t/data/b.PNG,t/sem_seg/b.PNG,ib,mb\n"
+    )
+
+    assert sample.manifest_digests(images_csv, "val") == {
+        "v/data/a.PNG": "ia",
+        "v/sem_seg/a.PNG": "ma",
+    }

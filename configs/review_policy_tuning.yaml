@@ -1,0 +1,30 @@
+# Review-policy tuning (docs/evaluation.md, "Review-policy evaluation").
+# Declared 2026-10-19, before any review-policy result on val. Candidates are
+# scored on val only (never calibration, which is reserved for temperature
+# scaling, and never test, which is spent for beltwatch-0.1.0). Any change to
+# the grid or the rules must bump `version`.
+version: rp-tuning-1
+
+release: beltwatch-0.1.0  # predictions come from this bundle (T 1.04)
+base_policy: configs/review_policy.yaml  # review-policy-1; unlisted values stay fixed
+
+# Version string of the selected candidate. Every candidate's random audit
+# sample is keyed to it, so the candidates differ only in their thresholds.
+candidate_version: review-policy-2
+
+grid:
+  coverage_threshold: [0.02, 0.03, 0.05, 0.08, 0.10, 0.15]
+  uncertain_fraction_threshold: [0.05, 0.10, 0.20, 0.30]
+
+selection:
+  # A candidate must send at least this share of audit-positive images
+  # (more than 5% true target coverage) to a person.
+  recall_floor: 0.95
+  # Among those, the lowest review rate wins; ties go to the lower share of
+  # flagged images that are not audit-positive, then to the earlier candidate.
+
+adoption:
+  # The selected candidate replaces review-policy-1 only if review-policy-1
+  # misses the recall floor, or if the candidate's review rate is at least this
+  # much lower (absolute).
+  min_review_rate_reduction: 0.05

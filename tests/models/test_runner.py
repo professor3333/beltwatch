@@ -73,6 +73,14 @@ def test_test_split_requires_declared_release() -> None:
         runner.main(["--model", "all-background", "--split", "test"])
 
 
+def test_the_resolution_ablation_is_val_only_and_neural_only() -> None:
+    with pytest.raises(SystemExit):
+        runner.main(["--model", "all-background", "--split", "calibration",
+                     "--inference-long-side", "1024"])  # fmt: skip
+    with pytest.raises(ValueError, match="neural"):
+        runner.load_predictor("all-background", None, long_side=1024)
+
+
 def test_model_file_names_what_each_predictor_loads(tmp_path: Path) -> None:
     assert runner.model_file("all-background", None) is None
     assert runner.model_file("random-forest", tmp_path) == tmp_path / "model.joblib"

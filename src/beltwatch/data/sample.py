@@ -1,27 +1,40 @@
-"""Fetch a few frames of one split from the pinned archive without downloading it.
+"""Fetch frames of one split from the pinned archive without downloading it.
 
 The archive is read through HTTP Range requests: the zip's central directory
 first, then only the requested members, whose CRC-32 the zip reader checks.
-It is for machines that need a small real sample (a benchmark host, CI)
-rather than the 7.5 GB download. The frames are the first ``--count`` image
-files of the split's image directory in name order, the same frames a
-benchmark over the extracted directory reads.
+It is for machines that need real data from one split (a benchmark host, CI)
+rather than the 7.5 GB download.
+
+Two modes:
+
+- ``--count N``: the first N image files of the split's image directory in
+  name order (the same frames a benchmark over the extracted directory
+  reads), written flat into ``--out`` with a ``frames.json`` index.
+- ``--whole``: every image and mask of the split, at their archive paths
+  under ``--out``, so ``--out`` can serve as the raw directory of a data
+  config. Each file is checked against the SHA-256 in the committed image
+  manifest, and files already present and intact are kept.
 
 Usage::
 
     uv run python -m beltwatch.data.sample --split val --count 20 --out frames/
+    uv run python -m beltwatch.data.sample --split val --whole --out data/raw/zerowaste-f
 
 The locked test split is refused. The frames are dataset images: keep them
 out of git and out of published artifacts.
 """
 
 import argparse
+import csv
 import hashlib
+import http.client
 import io
 import json
 import logging
+import threading
 import time
 import zipfile
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from urllib.request import Request, urlopen
 
@@ -88,7 +101,7 @@ class HTTPRangeFile(io.RawIOBase):
                 return data
             except RangeError:
                 raise
-            except OSError as exc:
+            except (OSError, http.client.HTTPException) as exc:  # incl. a dropped connection
                 if attempt == self.attempts:
                     raise
                 log.warning("range %d-%d failed (%s); retry %d", first, last, exc, attempt)
@@ -134,16 +147,102 @@ def fetch_sample(
     return records
 
 
+class ManifestMismatchError(RuntimeError):
+    """A fetched file does not match the committed image manifest."""
+
+
+def manifest_digests(images_csv: Path, split: str) -> dict[str, str]:
+    """Archive-relative path -> SHA-256 for every image and mask of ``split``."""
+    digests = {}
+    with images_csv.open(newline="", encoding="utf-8") as fh:
+        for row in csv.DictReader(fh):
+            if row["split"] == split:
+                digests[row["image_path"]] = row["image_sha256"]
+                digests[row["mask_path"]] = row["mask_sha256"]
+    return digests
+
+
+def _sha256(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def fetch_whole_split(
+    url: str,
+    size: int,
+    digests: dict[str, str],
+    out_root: Path,
+    *,
+    workers: int = 8,
+    block_size: int = BLOCK_SIZE,
+) -> dict[str, int]:
+    """Fetch every file in ``digests`` to ``out_root/<archive path>``, verifying each digest."""
+    local = threading.local()
+
+    def archive() -> zipfile.ZipFile:  # one reader per thread: ZipFile is not thread-safe
+        if not hasattr(local, "zf"):
+            local.zf = zipfile.ZipFile(
+                io.BufferedReader(HTTPRangeFile(url, size), buffer_size=block_size)
+            )
+        zf: zipfile.ZipFile = local.zf
+        return zf
+
+    def fetch(name: str) -> bool:
+        target = out_root / name
+        if target.exists() and _sha256(target) == digests[name]:
+            return False
+        data = archive().read(name)  # checks the member's CRC-32
+        if hashlib.sha256(data).hexdigest() != digests[name]:
+            raise ManifestMismatchError(f"{name}: SHA-256 differs from the image manifest")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        part = target.with_name(target.name + ".part")
+        part.write_bytes(data)
+        part.replace(target)
+        return True
+
+    names = sorted(digests)
+    fetched = 0
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        for i, new in enumerate(pool.map(fetch, names), 1):
+            fetched += new
+            if i % 100 == 0 or i == len(names):
+                log.info(
+                    "%d / %d files (%d fetched, %d already present)",
+                    i,
+                    len(names),
+                    fetched,
+                    i - fetched,
+                )
+    return {"files": len(names), "fetched": fetched, "kept": len(names) - fetched}
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0] if __doc__ else None)
     parser.add_argument("--config", type=Path, default=Path("configs/data.yaml"))
     parser.add_argument("--split", choices=ALLOWED_SPLITS, default="val")
-    parser.add_argument("--count", type=int, default=20)
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--count", type=int, default=20, help="the first N frames, flat")
+    mode.add_argument("--whole", action="store_true", help="every image and mask of the split")
+    parser.add_argument("--workers", type=int, default=8, help="parallel readers (--whole)")
     parser.add_argument("--out", type=Path, required=True, help="directory for the frames")
     args = parser.parse_args(argv)
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     config = load_data_config(args.config)
+    if args.whole:
+        images_csv = config.paths.manifests_dir / f"{config.source.name}-images.csv"
+        counts = fetch_whole_split(
+            config.source.url,
+            config.source.size_bytes,
+            manifest_digests(images_csv, args.split),
+            args.out,
+            workers=args.workers,
+        )
+        log.info("%s: %s", args.split, counts)
+        return 0
     layout = config.layout
     prefix = f"{layout.root_subdir}/{args.split}/{layout.images_subdir}/"
     records = fetch_sample(

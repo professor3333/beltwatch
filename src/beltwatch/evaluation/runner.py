@@ -292,6 +292,7 @@ def save_report(
     limited_to: int | None = None,
     temperature: Temperature = 1.0,
     model_path: Path | None = None,
+    inference_long_side: int | None = None,
 ) -> dict[str, Any]:
     """Build the report and write ``report.json``, ``per_image.csv`` and ``confusions.npz``.
 
@@ -303,6 +304,8 @@ def save_report(
     report["declared_release"] = declared_release
     report["limited_to"] = limited_to
     report["temperature"] = temperature
+    # Set only for the inference-resolution ablation (val); None = the checkpoint's own.
+    report["inference_long_side"] = inference_long_side
     report["provenance"] = provenance(model_path)
     out.mkdir(parents=True, exist_ok=True)
     (out / "report.json").write_text(json.dumps(report, indent=2) + "\n")
@@ -324,7 +327,14 @@ def model_file(kind: str, model_dir: Path | None) -> Path | None:
     raise ValueError(f"unknown model {kind!r}")
 
 
-def load_predictor(kind: str, model_dir: Path | None, temperature: Temperature = 1.0) -> Predictor:
+def load_predictor(
+    kind: str,
+    model_dir: Path | None,
+    temperature: Temperature = 1.0,
+    long_side: int | None = None,
+) -> Predictor:
+    if long_side is not None and kind not in ("unet", "segformer"):
+        raise ValueError(f"--inference-long-side applies to neural models, not {kind}")
     if kind == "all-background":
         return AllBackground()
     if model_dir is None:
@@ -334,7 +344,9 @@ def load_predictor(kind: str, model_dir: Path | None, temperature: Temperature =
     if kind in ("unet", "segformer"):
         from beltwatch.inference.neural import NeuralPredictor
 
-        return NeuralPredictor.from_checkpoint(model_dir / "best.pt", temperature=temperature)
+        return NeuralPredictor.from_checkpoint(
+            model_dir / "best.pt", temperature=temperature, long_side=long_side
+        )
     raise ValueError(f"unknown model {kind!r}")
 
 
@@ -355,6 +367,12 @@ def main(argv: list[str] | None = None) -> int:
         help="calibration temperature: one value, or one per class (comma-separated)",
     )
     parser.add_argument(
+        "--inference-long-side",
+        type=int,
+        help="ablation only (val): evaluate at this working long side instead of the "
+        "checkpoint's; not a servable preprocessing version",
+    )
+    parser.add_argument(
         "--declared-release",
         help="release name; required for the locked test split and recorded in the report",
     )
@@ -362,6 +380,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.split == "test" and not args.declared_release:
         parser.error("the test split is locked: pass --declared-release <name> for a release")
+    if args.inference_long_side and args.split != "val":
+        parser.error("--inference-long-side is a val-only ablation")
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     data = load_data_config(args.config)
@@ -373,11 +393,14 @@ def main(argv: list[str] | None = None) -> int:
     if args.limit:
         samples = samples[: args.limit]
     remap = load_source_remap(data.paths.manifests_dir / f"{name}-validation.json")
-    predictor = load_predictor(args.model, args.model_dir, args.temperature)
+    predictor = load_predictor(
+        args.model, args.model_dir, args.temperature, long_side=args.inference_long_side
+    )
 
     results = evaluate_images(predictor, samples, remap)
     splits_summary = json.loads((data.paths.splits_dir / f"{name}-splits.json").read_text())
-    out = args.out_dir / f"{predictor.name}-{args.split}"
+    suffix = f"-ls{args.inference_long_side}" if args.inference_long_side else ""
+    out = args.out_dir / f"{predictor.name}-{args.split}{suffix}"
     report = save_report(
         results,
         out,
@@ -389,6 +412,7 @@ def main(argv: list[str] | None = None) -> int:
         limited_to=args.limit,
         temperature=args.temperature,
         model_path=model_file(args.model, args.model_dir),
+        inference_long_side=args.inference_long_side,
     )
     seg = report["segmentation"]
     log.info(

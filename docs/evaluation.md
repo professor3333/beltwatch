@@ -79,6 +79,43 @@ coverage_c = pixels labelled c inside the inspection region
 - Orderings compared: random, the classical baseline, the neural model, and
   the neural model with an uncertainty share and random audits.
 
+## Review-policy evaluation
+
+Declared 2026-10-19, before any review-policy result on val
+(`configs/review_policy_tuning.yaml`, version `rp-tuning-1`). The workload
+curve above ranks images. This section measures the routing decision: which
+images the policy sends to a person.
+
+- **Data:** the val split, scored by the `beltwatch-0.1.0` bundle (T 1.04)
+  through the serving pipeline (`process_image`), with the full frame as the
+  inspection region. The calibration split stays reserved for temperature
+  scaling, and the test split is spent.
+- **Measured per policy:**
+  - review rate: the share of images with `review_required`
+  - recall: the share of audit-positive images that reach a person
+  - false-alarm share: the share of flagged images that are not audit-positive
+  - missed audit-positive images
+  - routes (`retake_image`, `manual_review`, `review`, `none`) and reasons,
+    including random audits
+- **Grid:** coverage threshold 0.02 to 0.15, uncertain-fraction threshold
+  0.05 to 0.30. The entropy threshold, priority weight, random audit rate
+  (10%) and quality thresholds stay at review-policy-1's values. The random
+  audit sample is keyed to the candidate version, so it is the same for
+  every candidate.
+- **Selection:** among candidates with recall of at least 0.95, the lowest
+  review rate wins.
+- **Adoption:** the selected candidate becomes `review-policy-2` only if
+  review-policy-1 misses the recall floor, or if the candidate's review rate
+  is at least 5 points lower.
+- **Limits:**
+  - Tuned and measured on the same val images, so the result is optimistic.
+  - No untouched evaluation set remains, so no unbiased claim is possible.
+  - An adopted policy needs a new declared release, and a new evaluation set
+    before any claim beyond val.
+  - The 5% audit-positive convention is unchanged.
+  - At about 90% prevalence, no policy with a 0.95 recall floor can review
+    much less than about 85% of images.
+
 ## Calibration
 
 - **Temperature scaling** is fitted on the **calibration split only**
