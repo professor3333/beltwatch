@@ -40,6 +40,28 @@ localhost:9090). Training never runs on this host.
    immediately, and running audits keep their own version.
 6. **Keep the previous image and bundle** for rollback.
 
+**Release validation in CI.** The `release` workflow
+(`.github/workflows/release.yml`) runs on a version tag (`v0.1.0` validates
+`beltwatch-0.1.0`), or by hand with
+`gh workflow run release -f release=<version>`. It fetches the declared
+weights from the private Kaggle Dataset named by the repository variable
+`KAGGLE_CHECKPOINTS_DATASET`, using the `KAGGLE_API_TOKEN` secret. It also
+fetches the release's val folder from the pinned archive and checks every
+file against the committed manifest. Then it checks:
+
+1. The weights match the declared SHA-256.
+2. A temperature refitted on the calibration split reproduces the declared
+   one.
+3. Val, re-scored at that temperature, reproduces the declared foreground
+   macro IoU.
+4. The bundle built from these outputs matches the declaration.
+5. The bundle, loaded as the worker loads it, predicts what the evaluated
+   checkpoint predicts (runtime parity).
+
+It then runs the host benchmark. It never fetches or scores the test split:
+a release is scored on test once, in the Kaggle `release` session. Only JSON
+reports are uploaded.
+
 Promote a model only with an evaluation report that passes the release gates
 in [evaluation.md](evaluation.md), and record why it was promoted
 (`--reason`) and which version it replaces (written to

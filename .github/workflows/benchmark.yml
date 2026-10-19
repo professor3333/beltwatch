@@ -23,12 +23,23 @@ on:
       release:
         description: Release declared in configs/releases/
         default: beltwatch-0.1.0
+  workflow_call:  # from release.yml, after the release is validated
+    inputs:
+      kaggle_dataset:
+        type: string
+        required: true
+      release:
+        type: string
+        required: true
+    secrets:
+      KAGGLE_API_TOKEN:
+        required: true
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}
+  group: benchmark-${{ inputs.release }}
   cancel-in-progress: false
 
 jobs:
@@ -66,16 +77,10 @@ jobs:
         env:
           KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
         run: |
-          test -n "$KAGGLE_API_TOKEN" || { echo "add the KAGGLE_API_TOKEN repository secret"; exit 1; }
-          # Pinned CLI; its dependencies resolve as of a fixed date.
-          uvx --exclude-newer 2026-10-01 --from kaggle==2.2.4 \
-            kaggle datasets download "$DATASET" -p "$WORK/checkpoints" --unzip --quiet
-          find "$WORK/checkpoints" -name '*.zip' -exec unzip -q -o {} -d "$WORK/checkpoints" \;
           read -r name kind < <(docker compose run --rm --no-deps -T api python -c \
             "import sys, yaml; m = yaml.safe_load(open(sys.argv[1]))['model']; print(m['checkpoint'], m['kind'])" \
             "configs/releases/$RELEASE.yaml")
-          dir=$(find "$WORK/checkpoints" -type d -name "$name" | head -n 1)
-          test -f "$dir/best.pt" || { echo "no $name/best.pt in the dataset"; exit 1; }
+          dir=$(scripts/fetch_kaggle_checkpoint.sh "$DATASET" "$name" "$WORK/checkpoints")
           echo "CHECKPOINT_DIR=$dir" >> "$GITHUB_ENV"
           echo "MODEL_KIND=$kind" >> "$GITHUB_ENV"
 
