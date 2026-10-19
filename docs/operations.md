@@ -140,6 +140,58 @@ cores and 8 GB, lease 20 s, 10 audits in flight;
 This is a development machine, not the 4 vCPU / 8 GB target, and the run
 used a lease far shorter than the 120 s default to make recovery quick.
 
+## Benchmark on the planning host
+
+The `benchmark` workflow (`.github/workflows/benchmark.yml`) measures a
+declared release on the planning host of 4 vCPU and 8 GB. It runs on a
+GitHub-hosted runner (4 vCPU and 16 GB for a public repository) and holds the
+serving image to 4 CPUs and 8 GB, and the compose stack to 5.5 GB in total
+(`docker/benchmark.compose.yaml`). A runner is a shared cloud VM, not
+dedicated hardware. The record names the CPU model, so a reader can judge it.
+
+Steps in the workflow:
+
+1. Build the serving image at the commit.
+2. Fetch the declared weights from a private Kaggle Dataset (see below).
+3. Fetch the first 20 frames of the val folder from the pinned archive by
+   range request (`python -m beltwatch.data.sample`). The test split is
+   refused.
+4. Rebuild the bundle from the committed calibration and val records in
+   `docs/results/<version>/`, and check it against the declaration.
+5. Benchmark the bundle inside the image, as the Kaggle session did (20
+   frames, 4 threads). **The engineering targets are judged on this step.**
+6. Bring up the compose stack and smoke-test it.
+7. Time audits end to end through the HTTPS proxy: 40 audits one at a time,
+   then 60 with four in flight. These times include the upload, the queue
+   and status polling every 0.5 s. They are reported alongside the targets,
+   not judged against them.
+8. Record each container's limits and its cgroup memory peak. The peak
+   includes page cache, so it reads higher than the resident memory.
+
+The only artifact is the JSON record (`benchmark-host.json`, plus the two
+end-to-end summaries). Weights and frames are never uploaded or printed.
+
+**Setup (once):**
+
+1. On Kaggle, open Settings → API and create a token.
+2. Add it as a repository secret named `KAGGLE_API_TOKEN`:
+   `gh secret set KAGGLE_API_TOKEN` (paste the token when prompted).
+   Repository secrets are not passed to workflows triggered from forks.
+3. Keep the checkpoints in the private Kaggle Dataset used by the notebook,
+   one folder per run (`segformer-b0-ce/best.pt`). The SegFormer weights are
+   noncommercial.
+
+**Run:**
+
+```bash
+gh workflow run benchmark -f kaggle_dataset=<owner>/<dataset> -f release=beltwatch-0.1.0
+gh run watch
+gh run download <run-id> -n benchmark-host-beltwatch-0.1.0 -D benchmark-host/
+```
+
+Copy `benchmark-host.json` into `docs/results/<version>/` before quoting any
+of its numbers.
+
 ## Known trade-offs
 
 - A single host means downtime during host maintenance. There is no high

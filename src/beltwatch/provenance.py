@@ -6,13 +6,18 @@ outputs all record the git commit and the SHA-256 of the model file.
 """
 
 import hashlib
+import os
 import subprocess
 from pathlib import Path
 from typing import Any
 
 
 def git_commit() -> str:
-    """HEAD of the working directory's repository, with ``-dirty`` for tracked changes."""
+    """HEAD of the working directory's repository, with ``-dirty`` for tracked changes.
+
+    Outside a repository (the serving image has no ``.git``), the commit the
+    image was built from, from ``BELTWATCH_GIT_COMMIT``; otherwise ``unknown``.
+    """
     try:
         commit = subprocess.run(
             ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True
@@ -25,7 +30,7 @@ def git_commit() -> str:
         ).stdout.strip()
         return f"{commit}-dirty" if dirty else commit
     except (OSError, subprocess.CalledProcessError):
-        return "unknown"
+        return os.environ.get("BELTWATCH_GIT_COMMIT") or "unknown"
 
 
 def file_digest(path: Path) -> str:
