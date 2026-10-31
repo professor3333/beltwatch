@@ -19,6 +19,4 @@ tests
 docs
 *.md
 !README.md
-CLAUDE.md
-.claude
 learning_log

@@ -50,7 +50,7 @@ test_comparisons:  # paired bootstrap, A - B
   - [release, random-forest]
   - [release, all-background]
 
-# Proposed targets (CLAUDE.md, docs/evaluation.md), reported on test as met or
+# Proposed targets (docs/design.md, docs/evaluation.md), reported on test as met or
 # missed. Val status at declaration: RF margin met, 0.40 missed, coverage MAE met
 # (4.43 pp), review workload about random (missed).
 targets:

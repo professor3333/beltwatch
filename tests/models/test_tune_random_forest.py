@@ -65,7 +65,7 @@ def test_selected_forest_reproduces_its_report_through_the_cli(
     digest = file_digest(out / "model.joblib")
     assert result["a"]["provenance"]["model_sha256"] == digest
     assert result["b"]["provenance"]["model_sha256"] == digest
-    assert result["a"]["provenance"]["model_file"] == str(out / "model.joblib")
+    assert result["a"]["provenance"]["model_file"] == f"{out.name}/model.joblib"
 
     check = ["--model", "random-forest", "--model-dir", str(out), "--split", "val"]
     cal_out = tmp_path / "calibration"

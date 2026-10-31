@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from beltwatch.provenance import file_digest, git_commit, provenance
+from beltwatch.provenance import file_digest, git_commit, provenance, recorded_path
 
 
 def test_file_digest_is_the_sha256_of_the_bytes(tmp_path: Path) -> None:
@@ -14,7 +14,16 @@ def test_file_digest_is_the_sha256_of_the_bytes(tmp_path: Path) -> None:
 
     assert file_digest(path) == hashlib.sha256(data).hexdigest()
     assert provenance(path)["model_sha256"] == hashlib.sha256(data).hexdigest()
-    assert provenance(path)["model_file"] == str(path)
+    assert provenance(path)["model_file"] == f"{tmp_path.name}/weights.bin"
+
+
+def test_recorded_paths_never_carry_a_machines_absolute_location(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    assert recorded_path(tmp_path / "models" / "unet" / "best.pt") == "models/unet/best.pt"
+    assert recorded_path(Path("models/best.pt")) == "models/best.pt"
+    assert recorded_path(Path("/elsewhere/scratch/run-1/best.pt")) == "run-1/best.pt"
 
 
 def test_git_commit_outside_a_repository_is_unknown(

@@ -10,6 +10,10 @@ machine the host benchmark on GitHub-hosted runners, and the val analyses on the
 local machine at commit `5e2f5a5` (all 2026-10-19). The numbers in the README and the [model card](../../model_card.md)
 come from these files. `tests/unit/test_release_declaration.py` checks them
 against the declaration.
+One later edit (2026-10-31): the `provenance.model_file` fields in
+`val-analysis/resolution/` held a machine-local absolute path and now hold
+only `segformer-b0-ce/best.pt`. The SHA-256 beside each one, which identifies
+the weights, is unchanged.
 
 | File | Contents |
 |---|---|
