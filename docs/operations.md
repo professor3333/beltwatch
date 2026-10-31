@@ -246,9 +246,14 @@ the record refuses any run with cache hits.
 
 ## Hosted demo
 
-The public demo runs on a Hugging Face Docker Space (free CPU basic tier:
-2 shared vCPUs, temporary disk). It differs from the Compose deployment in
-these ways:
+The public demo is packaged for a Hugging Face Docker Space (CPU basic:
+2 shared vCPUs, temporary disk). **Status (2026-10-31): not published.**
+Docker Spaces on CPU now require a paid Hugging Face plan, and no paid host
+has been chosen. Everything below has been verified locally (fetch from the
+private repository, `deploy_smoke`, the UI in a headless browser). The
+container needs no Hugging Face-specific feature apart from HTTPS in front of
+port 7860, so it can run on any container host. It differs from the Compose
+deployment in these ways:
 
 - **One container.** `python -m beltwatch.demo` fetches the release, then
   runs the API and the worker as child processes. It exits as soon as either

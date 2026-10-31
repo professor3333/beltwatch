@@ -216,7 +216,7 @@ bootstrap over the 5 test recording sequences.
 | Ablations and 3-seed finalists | Done for loss, crop sampling and class weights (none adopted); 3 seeds of the finalist; inference resolution on val (768 kept) |
 | Locked test-set evaluation of a declared release | Done once, for `beltwatch-0.1.0` ([results](#results)) |
 | Usability-study kit (protocol, matched val sets, study page, declared analysis) | Built, tested, dry-run with scripted sessions; **no participant sessions yet** ([protocol](docs/usability_study.md)) |
-| Hosted demo (Hugging Face Space, one container) | Built and verified locally against the private release repository; not yet published |
+| Hosted demo (one container) | Built and verified locally against the private release repository. **Not published:** Hugging Face Docker Spaces on CPU now need a paid plan. The container runs on any container host |
 | Staged robustness dataset | Not started: no staged or new-camera images exist, so no claim goes beyond the ZeroWaste-f recordings |
 | ONNX/INT8 export | Not pursued: PyTorch already meets every CPU target on the planning-host profile (p95 at most 0.79 s against 3 s), so the benchmark gives no reason to adopt it |
 
@@ -388,10 +388,12 @@ restarting the worker. CI builds the image and performs a
 real deployment, release switch, and rollback on every change to the serving
 code.
 
-The same image runs as a one-container public demo on a Hugging Face Space
-(`python -m beltwatch.demo`). That container fetches the pinned release from a
-private model repository, refuses training consent, and deletes uploads after
-24 h. See [operations.md](docs/operations.md#hosted-demo).
+The same code also runs as a one-container public demo
+(`python -m beltwatch.demo`, packaged for a Hugging Face Docker Space). That
+container fetches the pinned release from a private model repository, refuses
+training consent, and deletes uploads after 24 h. It has been verified
+locally but is not published. See
+[operations.md](docs/operations.md#hosted-demo).
 
 ### Running the usability study
 
