@@ -26,6 +26,9 @@ class Settings(BaseModel):
     torch_threads: int | None = None
     frontend_dir: Path | None = None
     """Static review UI; defaults to the repository's ``frontend/`` directory."""
+    public_demo: bool = False
+    """A public demo refuses training consent (nothing from it enters a dataset)
+    and tells the UI to show the demo notice."""
 
     @property
     def database_path(self) -> Path:

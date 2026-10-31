@@ -244,6 +244,56 @@ audits repeated the sequential run's regions and were served from the result
 cache, so it is not reported. Since then the workflow uses a second seed, and
 the record refuses any run with cache hits.
 
+## Hosted demo
+
+The public demo runs on a Hugging Face Docker Space (free CPU basic tier:
+2 shared vCPUs, temporary disk). It differs from the Compose deployment in
+these ways:
+
+- **One container.** `python -m beltwatch.demo` fetches the release, then
+  runs the API and the worker as child processes. It exits as soon as either
+  one stops, and the Space restarts it. The Space provides HTTPS; there is
+  no Caddy and no Prometheus.
+- **Public-demo mode** (`BELTWATCH_PUBLIC_DEMO=true`). The API refuses
+  `training_consent: true` (`422 training_consent_unavailable`), and the UI
+  hides the consent box and shows a notice: uploads are deleted after 24 h
+  and never used for training, and estimates are not meaningful on images
+  unlike ZeroWaste-f. `/metrics` gets a random bearer token at each start,
+  so it is effectively closed. At most 10 audits wait in the queue, and the
+  worker uses 2 threads.
+- **Weights stay private.** Release bundles live in a private model
+  repository (`professor3333/beltwatch-releases`, one directory per version).
+  At startup, `beltwatch.release.fetch` downloads the version pinned in the
+  Space's Dockerfile at a fixed commit of that repository. It checks the
+  weights digest against the release declaration, then activates the bundle.
+  A moved branch or a different file cannot be served silently. The Space
+  reads the repository with the secret `HF_TOKEN`, a fine-grained read-only
+  token for that one repository. The API and the worker never see the token.
+- **No bundled samples.** The demo does not redistribute dataset images.
+  Visitors upload their own images, and every upload goes through the real
+  inference path.
+- The disk is temporary: a restart (and the Space's sleep after inactivity)
+  deletes every audit.
+
+Publish or update it from a clean checkout of `main`:
+
+```bash
+# Once per release: upload the bundle; prints the model repository's commit.
+uv run python scripts/hosted_demo.py upload-release \
+    --repo professor3333/beltwatch-releases --version beltwatch-0.1.0
+
+# Assemble the Space from HEAD (committed files only) and push it.
+uv run python scripts/hosted_demo.py build-space --out /tmp/beltwatch-space \
+    --release-repo professor3333/beltwatch-releases --release-revision <commit> \
+    --version beltwatch-0.1.0 --push professor3333/beltwatch
+```
+
+Then check the deployment like any other:
+`python3 scripts/deploy_smoke.py --base-url https://professor3333-beltwatch.hf.space
+--expect-version beltwatch-0.1.0`. To roll back, run `build-space` again
+from the previous commit or for the previous release. The Space then holds
+exactly that build (the push replaces every file).
+
 ## Known trade-offs
 
 - A single host means downtime during host maintenance. There is no high

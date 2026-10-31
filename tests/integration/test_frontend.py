@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -44,3 +45,11 @@ def test_frontend_dir_is_configurable(settings: Settings, tmp_path: Path) -> Non
         create_app(settings.model_copy(update={"frontend_dir": custom, "require_worker": False}))
     ) as c:
         assert c.get("/").text == "<h1>custom</h1>"
+
+
+def test_every_element_the_ui_script_uses_exists() -> None:
+    frontend = Path(__file__).resolve().parents[2] / "frontend"
+    page = (frontend / "index.html").read_text()
+    used = set(re.findall(r'\$\("([\w-]+)"\)', (frontend / "app.js").read_text()))
+    assert {"demo-notice", "consent-field", "upload-hint"} <= used
+    assert sorted(i for i in used if f'id="{i}"' not in page) == []

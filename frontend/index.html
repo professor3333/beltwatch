@@ -20,6 +20,7 @@
   </header>
 
   <main>
+    <p id="demo-notice" class="notice hidden" role="note"></p>
     <section id="upload-view" class="card" aria-labelledby="upload-title">
       <h2 id="upload-title">1. Upload conveyor snapshots</h2>
       <div class="upload-grid">
@@ -27,7 +28,7 @@
           <label class="dropzone" id="dropzone">
             <input id="files" type="file" accept="image/png,image/jpeg,image/webp" multiple>
             <strong>Choose images</strong> or drop them here
-            <span class="hint">PNG, JPEG, or WebP · up to 20 per audit</span>
+            <span class="hint" id="upload-hint">PNG, JPEG, or WebP · up to 20 per audit</span>
           </label>
           <ul id="file-list" class="file-list"></ul>
           <label class="field">Camera ID
@@ -47,7 +48,7 @@
           </div>
         </div>
       </div>
-      <label class="consent"><input id="consent" type="checkbox"> Corrections from this audit may be used to improve future models (after annotation review).</label>
+      <label class="consent" id="consent-field"><input id="consent" type="checkbox"> Corrections from this audit may be used to improve future models (after annotation review).</label>
       <div class="row">
         <button id="submit" type="button" class="primary" disabled>Start audit</button>
         <span id="upload-error" class="error" role="alert"></span>

@@ -81,9 +81,27 @@ async function loadModel() {
     }
     for (const [k, v] of rows) details.append(el("dt", { text: k }), el("dd", { text: String(v) }));
     $("model-limitations").replaceChildren(...model.limitations.map((t) => el("li", { text: t })));
+    showService(model.service);
   } catch (error) {
     button.textContent = "Model unavailable";
     button.title = error.message;
+  }
+}
+
+function showService(service) {
+  if (!service) return;
+  $("upload-hint").textContent = `PNG, JPEG, or WebP · up to ${service.max_files_per_audit} per audit`;
+  if (!service.accepts_training_consent) {
+    $("consent").checked = false;
+    $("consent-field").classList.add("hidden");
+  }
+  if (service.public_demo) {
+    const notice = $("demo-notice");
+    notice.textContent =
+      `Public demo. Uploads and decisions are deleted after ${service.retention_hours} hours and are ` +
+      "never used for training. The model was trained on one facility's conveyor recordings " +
+      "(ZeroWaste-f); on other images its estimates are not meaningful.";
+    notice.classList.remove("hidden");
   }
 }
 

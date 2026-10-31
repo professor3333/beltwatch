@@ -320,6 +320,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "invalid audit options",
                 errors=json.loads(exc.json(include_url=False)),
             ) from exc
+        if opts.training_consent and settings.public_demo:
+            raise ApiError(
+                422,
+                "training_consent_unavailable",
+                "this public demo does not keep uploads or corrections for training",
+            )
         if not 1 <= len(files) <= settings.max_files_per_audit:
             raise ApiError(
                 422,
@@ -661,6 +667,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "licenses": list(m.licenses),
             "evaluation": evaluation,
             "measurement": "estimated visible coverage (not contamination by weight)",
+            "service": {
+                "public_demo": settings.public_demo,
+                "retention_hours": settings.retention_hours,
+                "max_files_per_audit": settings.max_files_per_audit,
+                "accepts_training_consent": not settings.public_demo,
+            },
         }
 
     @app.get("/health/live")

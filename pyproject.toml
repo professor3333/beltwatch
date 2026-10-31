@@ -10,6 +10,7 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
     "alembic>=1.13",
     "fastapi>=0.115",
+    "huggingface-hub>=1.33",
     "mlflow-skinny>=3.0",
     "numpy>=2.0",
     "pillow>=10.4",

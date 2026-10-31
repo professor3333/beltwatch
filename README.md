@@ -21,7 +21,7 @@ Semantic segmentation · visible-coverage estimation · uncertainty-aware review
 > split: foreground macro IoU **0.336**, 18.4 points above the tuned random
 > forest. It **misses** the proposed 0.40 target and the review-workload
 > target. See [Results](#results). The pipeline, the audit service and the
-> deployment are built and tested (315 tests).
+> deployment are built and tested (356 tests).
 
 ## Architecture
 
@@ -216,7 +216,9 @@ bootstrap over the 5 test recording sequences.
 | Ablations and 3-seed finalists | Done for loss, crop sampling and class weights (none adopted); 3 seeds of the finalist; inference resolution on val (768 kept) |
 | Locked test-set evaluation of a declared release | Done once, for `beltwatch-0.1.0` ([results](#results)) |
 | Usability-study kit (protocol, matched val sets, study page, declared analysis) | Built, tested, dry-run with scripted sessions; **no participant sessions yet** ([protocol](docs/usability_study.md)) |
-| Staged robustness dataset, hosted demo, ONNX/INT8 | Not started |
+| Hosted demo (Hugging Face Space, one container) | Built and verified locally against the private release repository; not yet published |
+| Staged robustness dataset | Not started: no staged or new-camera images exist, so no claim goes beyond the ZeroWaste-f recordings |
+| ONNX/INT8 export | Not pursued: PyTorch already meets every CPU target on the planning-host profile (p95 at most 0.79 s against 3 s), so the benchmark gives no reason to adopt it |
 
 The full plan, targets, and Definition of Done are in
 [`docs/design.md`](docs/design.md). The GPU steps are in the
@@ -386,6 +388,11 @@ restarting the worker. CI builds the image and performs a
 real deployment, release switch, and rollback on every change to the serving
 code.
 
+The same image runs as a one-container public demo on a Hugging Face Space
+(`python -m beltwatch.demo`). That container fetches the pinned release from a
+private model repository, refuses training consent, and deletes uploads after
+24 h. See [operations.md](docs/operations.md#hosted-demo).
+
 ### Running the usability study
 
 The protocol, consent script and declared analysis are in
@@ -441,9 +448,13 @@ src/beltwatch/api/       FastAPI application and settings
 src/beltwatch/jobs/      SQLite job store, per-image pipeline, inference worker
 src/beltwatch/review/    Review policy (routing, priority, random audits)
 src/beltwatch/study/     Usability study: set selection, submission, session launcher, declared analysis
-src/beltwatch/release/   Versioned, checksummed release bundles, declarations, and runtime parity
+src/beltwatch/release/   Versioned, checksummed release bundles, declarations, runtime parity, and
+                         fetching a pinned bundle from a model repository
+src/beltwatch/demo.py    Hosted demo: fetch the release, run the API and the worker in one container
 frontend/                Review UI and usability-study page (static HTML/CSS/JS, no external dependencies)
-Dockerfile, compose.yaml, docker/   Serving image, Compose stack, Caddy and Prometheus config
+Dockerfile, compose.yaml, docker/   Serving image, Compose stack, Caddy and Prometheus config,
+                         and the Hugging Face Space template (docker/space/)
+scripts/hosted_demo.py   Upload a release to the private model repository; assemble and push the Space
 scripts/deploy_smoke.py  Deployment smoke test (standard library only)
 scripts/soak_test.py     Reliability soak test: many audits, worker kills, duplicate checks
 configs/review_policy.yaml  Versioned review thresholds
@@ -457,7 +468,7 @@ docs/model_card.md       Intended use, models, results, failure modes
 docs/evaluation.md       Evaluation protocol: metrics, coverage, review workload, confidence intervals
 docs/training.md         GPU training runbook
 docs/architecture.md     Service architecture, failure handling, data model
-docs/operations.md       Deploy, release, rollback, backup, monitoring
+docs/operations.md       Deploy, release, rollback, backup, monitoring, hosted demo
 docs/error_analysis.md   Error report contents and findings log
 docs/usability_study.md  Usability-study protocol and declared analysis
 THIRD_PARTY_NOTICES.md   Dataset and model licensing
