@@ -19,16 +19,15 @@ import os
 import signal
 import socket
 import subprocess
-import sys
 import threading
 import time
 import urllib.error
 import urllib.request
-from collections.abc import Callable, Iterator, Sequence
-from contextlib import contextmanager
+from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import IO, Any
+from typing import Any
 
+from beltwatch.service import running_service
 from beltwatch.study.prepare import StudyError, load_study
 from beltwatch.study.submit import PILOT, http_transport, submit_study
 
@@ -59,18 +58,6 @@ def _wait_ready(
     raise StudyError(f"service not ready after {timeout:.0f} s: {last}")
 
 
-def _stop(process: subprocess.Popen[bytes]) -> None:
-    """Stop a process and everything it started (it leads its own process group)."""
-    if process.poll() is not None:
-        return
-    os.killpg(process.pid, signal.SIGTERM)
-    try:
-        process.wait(timeout=10)
-    except subprocess.TimeoutExpired:
-        os.killpg(process.pid, signal.SIGKILL)
-        process.wait()
-
-
 def _check_port_free(host: str, port: int) -> None:
     with socket.socket() as probe:
         # Like uvicorn: a socket left in TIME_WAIT by the last session does not count.
@@ -79,31 +66,6 @@ def _check_port_free(host: str, port: int) -> None:
             probe.bind((host, port))
         except OSError as exc:
             raise StudyError(f"{host}:{port} is in use ({exc}); choose another --port") from exc
-
-
-@contextmanager
-def running_service(
-    host: str, port: int, logs: IO[bytes], env: dict[str, str] | None = None
-) -> Iterator[list[subprocess.Popen[bytes]]]:
-    env = dict(os.environ if env is None else env)
-    env.setdefault("BELTWATCH_RETENTION_HOURS", RETENTION_HOURS)
-    api = ("uvicorn", "beltwatch.api.app:create_app", "--factory", "--log-level", "warning")
-    commands = (
-        [sys.executable, "-m", *api, "--host", host, "--port", str(port)],
-        [sys.executable, "-m", "beltwatch.jobs.worker"],
-    )
-    processes: list[subprocess.Popen[bytes]] = []
-    try:
-        for command in commands:
-            processes.append(
-                subprocess.Popen(
-                    command, env=env, stdout=logs, stderr=subprocess.STDOUT, start_new_session=True
-                )
-            )
-        yield processes
-    finally:
-        for process in processes:
-            _stop(process)
 
 
 def _wait_for_interrupt() -> None:
@@ -132,6 +94,8 @@ def run_session(
     load_study(study_dir)  # fail before starting anything if the folder is not a study
     _check_port_free(host, port)
     base_url = f"http://{host}:{port}"
+    env = dict(os.environ if env is None else env)
+    env.setdefault("BELTWATCH_RETENTION_HOURS", RETENTION_HOURS)
     with (study_dir / LOG_FILE).open("ab") as logs, running_service(host, port, logs, env) as procs:
         _wait_ready(base_url, procs, ready_timeout)
         record = submit_study(study_dir, http_transport(base_url), participants=participants)

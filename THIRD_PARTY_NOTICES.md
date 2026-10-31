@@ -51,6 +51,7 @@ BeltWatch with them must follow them.
 ## Software dependencies
 
 Key libraries: PyTorch and torchvision (BSD-3-Clause), Hugging Face
-Transformers (Apache-2.0), scikit-learn and scikit-image (BSD-3-Clause),
-FastAPI (MIT), MLflow (Apache-2.0), DVC (Apache-2.0), NumPy and Pillow
-(BSD-style / HPND). The full, pinned dependency set is in `uv.lock`.
+Transformers and huggingface_hub (Apache-2.0), scikit-learn and
+scikit-image (BSD-3-Clause), FastAPI (MIT), MLflow (Apache-2.0), DVC
+(Apache-2.0), NumPy and Pillow (BSD-style / HPND). The full, pinned
+dependency set is in `uv.lock`.

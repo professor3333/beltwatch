@@ -1,0 +1,44 @@
+# BeltWatch hosted demo on a Hugging Face Docker Space (CPU basic: 2 vCPU).
+# Template: scripts/hosted_demo.py fills in the placeholders and writes it to
+# the Space as `Dockerfile`. One container runs the API and the worker
+# (python -m beltwatch.demo); it fetches the pinned release bundle at startup.
+# Base image, uv, and the dependency set match the main Dockerfile (a test checks).
+FROM python:3.12.15-slim-bookworm
+
+COPY --from=ghcr.io/astral-sh/uv:0.12.5 /uv /usr/local/bin/uv
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PYTHON_DOWNLOADS=never
+
+# Spaces run the container as uid 1000.
+RUN useradd --uid 1000 --create-home user
+WORKDIR /app
+
+COPY pyproject.toml uv.lock README.md LICENSE ./
+RUN uv sync --locked --extra cpu --no-group dev --no-group pipeline --no-install-project
+
+COPY src ./src
+COPY frontend ./frontend
+COPY configs ./configs
+RUN uv sync --locked --extra cpu --no-group dev --no-group pipeline --no-editable
+
+USER user
+ENV HOME=/home/user \
+    PATH=/app/.venv/bin:$PATH \
+    BELTWATCH_DATA_DIR=/home/user/data \
+    BELTWATCH_RELEASES_DIR=/home/user/releases \
+    BELTWATCH_FRONTEND_DIR=/app/frontend \
+    BELTWATCH_RETENTION_HOURS=24 \
+    BELTWATCH_MAX_PENDING_AUDITS=10 \
+    BELTWATCH_TORCH_THREADS=2 \
+    BELTWATCH_GIT_COMMIT={git_commit} \
+    BELTWATCH_DEMO_RELEASE_REPO={release_repo} \
+    BELTWATCH_DEMO_RELEASE_REVISION={release_revision} \
+    BELTWATCH_DEMO_RELEASE_VERSION={release_version} \
+    BELTWATCH_DEMO_RELEASE_SHA256={release_sha256}
+
+EXPOSE 7860
+CMD ["python", "-m", "beltwatch.demo", "--port", "7860"]
