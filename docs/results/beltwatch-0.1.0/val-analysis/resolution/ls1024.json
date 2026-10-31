@@ -245,7 +245,7 @@
   "inference_long_side": 1024,
   "provenance": {
     "git_commit": "5e2f5a5160ab7704207b334302819018cdde8c9d",
-    "model_file": "/private/tmp/claude-501/-Users-dcxhagoromo-code-BeltWatch/37a717d2-36e6-4752-b617-822135913a28/scratchpad/ckpt/beltwatch-checkpoints/segformer-b0-ce/best.pt",
+    "model_file": "segformer-b0-ce/best.pt",
     "model_sha256": "7be82fdedc06a978ced8b3ef3cdf53461f5e60bbe462fbbeb63c8e2aa4046756"
   }
 }

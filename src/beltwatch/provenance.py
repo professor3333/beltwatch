@@ -41,10 +41,22 @@ def file_digest(path: Path) -> str:
     return h.hexdigest()
 
 
+def recorded_path(path: Path) -> str:
+    """``path`` as written into outputs that get committed: relative to the working
+    directory when inside it, else only its folder and name, never a machine's
+    absolute path. The SHA-256 next to it identifies the file."""
+    if not path.is_absolute():
+        return path.as_posix()
+    try:
+        return path.relative_to(Path.cwd()).as_posix()
+    except ValueError:
+        return Path(*path.parts[-2:]).as_posix()
+
+
 def provenance(model_path: Path | None) -> dict[str, Any]:
     """The code commit and, for a trained model, its file and SHA-256."""
     return {
         "git_commit": git_commit(),
-        "model_file": None if model_path is None else str(model_path),
+        "model_file": None if model_path is None else recorded_path(model_path),
         "model_sha256": None if model_path is None else file_digest(model_path),
     }
